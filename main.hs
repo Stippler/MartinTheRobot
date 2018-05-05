@@ -31,6 +31,8 @@ appLoop renderer = do
   drawLine renderer (P (V2 1 1)) (P (V2 800 600))
   fillRect renderer (Just $ Rectangle (P (V2 50 50)) (V2 100 50))
   fillRect renderer (Just $ Rectangle (P (V2 100 100)) (V2 100 50))
+  rendererDrawColor renderer $= V4 255 125 60 140
+  fillRect renderer (Just $ Rectangle (P (V2 75 75)) (V2 100 50))
   present renderer
   unless qPressed (appLoop renderer)
 
