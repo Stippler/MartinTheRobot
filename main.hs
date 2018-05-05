@@ -6,6 +6,7 @@ import SDL.Video.Renderer
 import SDL.Vect
 import Linear (V4(..))
 import Control.Monad (unless)
+import SDL.Input.Keyboard
 
 main :: IO ()
 main = do
