@@ -1,39 +1,58 @@
-{-# LANGUAGE OverloadedStrings #-}
-module Main where
 
-import SDL
-import SDL.Video.Renderer
-import SDL.Vect
-import Linear (V4(..))
-import Control.Monad (unless)
-import SDL.Input.Keyboard
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecursiveDo #-}
+
+import Graphics.UI.WX hiding (Event)
+import Reactive.Banana 
+import Reactive.Banana.WX hiding (compile)
+
+width = 400
 
 main :: IO ()
-main = do
-  initializeAll
-  window <- createWindow "Martin der Roboter" defaultWindow
-  renderer <- createRenderer window (-1) defaultRenderer
-  appLoop renderer
+main = start $ do 
+  f <- frame [text:="Martin der Roboter"]
+  p <- panel f []
+  t <- timer f [ interval := 10 ]
+  
+  let networkDescription :: MomentIO ()
+      networkDescription = mdo
+      
+        etick <- event0 t command
+        ekey <- event1 p keyboard
 
-appLoop :: Renderer -> IO ()
-appLoop renderer = do
-  events <- pollEvents
-  let eventIsQPress event =
-        case eventPayload event of
-          KeyboardEvent keyboardEvent ->
-            keyboardEventKeyMotion keyboardEvent == Pressed &&
-            keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
-          _ -> False
-      qPressed = any eventIsQPress events
-  rendererDrawColor renderer $= V4 255 255 255 255
-  clear renderer
-  rendererDrawColor renderer $= V4 0 0 0 255
-  drawLine renderer (P (V2 1 1)) (P (V2 800 600))
-  drawLine renderer (P (V2 800 1)) (P (V2 1 600))
-  fillRect renderer (Just $ Rectangle (P (V2 50 50)) (V2 100 50))
-  fillRect renderer (Just $ Rectangle (P (V2 100 100)) (V2 100 50))
-  rendererDrawColor renderer $= V4 255 125 60 140
-  fillRect renderer (Just $ Rectangle (P (V2 75 75)) (V2 100 50))
-  present renderer
-  unless qPressed (appLoop renderer)
+        let eleft  = filterE ((== KeyLeft ) . keyKey) ekey
+            eright = filterE ((== KeyRight) . keyKey) ekey
+            eup    = filterE ((== KeyUp   ) . keyKey) ekey
+            edown  = filterE ((== KeyDown ) . keyKey) ekey
+          
+        (brect :: Behavior (Point2 Int))
+            <- accumB (Point 20 30) $ unions
+              [ goLeft  <$ eleft
+              , goRight <$ eright
+              , goUp    <$ eup
+              , goDown  <$ edown
+              ]
+        let
+          goLeft  (Point x y) = Point (x-5)  y
+          goRight (Point x y) = Point (x+5)  y
+          goUp    (Point x y) = Point  x    (y-5)
+          goDown  (Point x y) = Point  x    (y+5)
+      
+        bpaint <- stepper (\_dc _ -> return ()) $ (renderRect <$> brect) <@ etick
+      
+        sink  p [on paint :== bpaint]
+        reactimate $ repaint p <$ etick
+        
+        return ()
+  
+  network <- compile networkDescription
+  actuate network
 
+  return ()
+  
+
+
+renderRect :: Point -> DC a -> Rect -> IO ()
+renderRect point dc viewArea = do
+  set dc [brushColor := black, brushKind := BrushSolid]
+  drawRect dc (Rect (pointX point) (pointY point) 50 50) []
