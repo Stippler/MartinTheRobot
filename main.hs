@@ -61,7 +61,7 @@ main = start $ do
 collisionWithShots :: [Circle] -> [Circle] -> [Circle]
 collisionWithShots [] [] = []
 collisionWithShots [] drops = drops
-collisionWithShots shots drops = filter (not $ intersects (head shots)) drops
+collisionWithShots shots drops = filter (not . (intersects (head shots))) drops
 
 
 
