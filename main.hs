@@ -33,11 +33,20 @@ main = start $ do
             stepper (Circle 0 0 0) $
                 toCircle 15 <$> (filterJust $ justMove <$> emouse)
         
-        (bRainDrops :: Behavior [Circle])
-                <- accumB [Circle 10 10 10] $ unions
-                    [fallingDrops <$ etick]
+        (bShot :: Behavior [Circle])
+                <- accumB [] $ unions
+                    [ addShot <$> (toCircle 10 <$> (filterJust $ justPressed <$> emouse))
+                    , moveShot <$ etick
+                    ]
         
-        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bRainDrops) <@ etick
+
+        (bRainDrops :: Behavior [Circle])
+                <- accumB [Circle 20 10 10, Circle 50 10 10] $ unions
+                    [ fallingDrops <$ etick
+                    , (collisionWithShots <$> bShot <@ etick) 
+                    ]
+        
+        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShot <*> bRainDrops ) <@ etick
       
         sink  p [on paint :== bpaint]
         reactimate $ repaint p <$ etick
@@ -49,23 +58,39 @@ main = start $ do
 
   return ()
   
+collisionWithShots :: [Circle] -> [Circle] -> [Circle]
+collisionWithShots [] [] = []
+collisionWithShots [] drops = drops
+collisionWithShots shots drops = filter (not $ intersects (head shots)) drops
 
 
-render :: Circle -> [Circle] -> DC a -> Rect -> IO ()
-render circle circles dc viewArea = do
-  set dc [brushColor := black, brushKind := BrushSolid]
+
+render :: Circle -> [Circle] -> [Circle] -> DC a -> Rect -> IO ()
+render circle shots circles dc viewArea = do
+  set dc [brushColor := blue, brushKind := BrushSolid]
   renderCircle dc circle
-  head $ map (renderCircle dc) circles
+  set dc [brushColor := red, brushKind := BrushSolid]
+  mapM (renderCircle dc) circles
+  set dc [brushColor := green, brushKind := BrushSolid]
+  mapM (renderCircle dc) shots
   return ()
-
 
 renderCircle :: DC a -> Circle -> IO ()
 renderCircle dc circle = do
   Graphics.UI.WX.circle dc (point (getX circle) (getY circle)) (getRadius circle) []
 
 fallingDrops :: [Circle] -> [Circle]
-fallingDrops circles = (moveY 1) <$> circles
+fallingDrops circles = (moveY 0) <$> circles
 
+moveShot :: [Circle] -> [Circle]
+moveShot circles = (moveY (-1)) <$> circles
+
+addShot :: Circle -> [Circle] -> [Circle]
+addShot circle circles = circle:circles
+
+justPressed :: EventMouse -> Maybe Point
+justPressed (MouseLeftDown pt _) = Just pt
+justPressed _ = Nothing
 
 justMove :: EventMouse -> Maybe Point
 justMove (MouseMotion pt _) = Just pt
