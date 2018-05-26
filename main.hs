@@ -42,8 +42,8 @@ main = start $ do
 
         (bRainDrops :: Behavior [Circle])
                 <- accumB [Circle 20 10 10, Circle 50 10 10] $ unions
-                    [ fallingDrops <$ etick
-                    , (collisionWithShots <$> bShot <@ etick) 
+                    [ collisionWithShots <$>  bShot <@ (fallingDrops <$ etick)
+                    --, (collisionWithShots <$> bShot <@ etick) 
                     ]
         
         bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShot <*> bRainDrops ) <@ etick
@@ -57,11 +57,6 @@ main = start $ do
   actuate network
 
   return ()
-  
-collisionWithShots :: [Circle] -> [Circle] -> [Circle]
-collisionWithShots [] [] = []
-collisionWithShots [] drops = drops
-collisionWithShots shots drops = filter (not . (intersects (head shots))) drops
 
 
 
@@ -79,11 +74,16 @@ renderCircle :: DC a -> Circle -> IO ()
 renderCircle dc circle = do
   Graphics.UI.WX.circle dc (point (getX circle) (getY circle)) (getRadius circle) []
 
+collisionWithShots :: [Circle] -> [Circle] -> [Circle]
+collisionWithShots [] [] = []
+collisionWithShots [] drops = drops
+collisionWithShots shots drops = filter (not . (intersectsList shots)) drops
+
 fallingDrops :: [Circle] -> [Circle]
-fallingDrops circles = (moveY 0) <$> circles
+fallingDrops circles = (moveY 1) <$> circles
 
 moveShot :: [Circle] -> [Circle]
-moveShot circles = (moveY (-1)) <$> circles
+moveShot circles = filter ((>(-20)).(getY)) $ (moveY (-1)) <$> circles
 
 addShot :: Circle -> [Circle] -> [Circle]
 addShot circle circles = circle:circles
