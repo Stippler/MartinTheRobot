@@ -16,11 +16,13 @@ main = start $ do
   p <- panel f [ ]
   -- set f [ layout := minsize (sz width height) $ widget p ]
   t <- timer f [ interval := 10 ]
+  t2 <- timer f [ interval := 100 ]
   
   let networkDescription :: MomentIO ()
       networkDescription = mdo
       
         etick <- event0 t command
+        etick2 <- event0 t2 command
         ekey <- event1 p keyboard 
         emouse <- event1 p mouse -- mouse events
 
@@ -28,23 +30,35 @@ main = start $ do
             eright = filterE ((== KeyRight) . keyKey) ekey
             eup    = filterE ((== KeyUp   ) . keyKey) ekey
             edown  = filterE ((== KeyDown ) . keyKey) ekey
-          
-        (bPlayerPosition :: Behavior (Circle)) <-
-            stepper (Circle 0 0 0) $
-                toCircle 15 <$> (filterJust $ justMove <$> emouse)
+                
+        (bPlayerPosition :: Behavior (Circle))
+            <- stepper (Circle 0 0 0) $
+                 toCircle 15 <$> (filterJust $ justMove <$> emouse)
         
         (bShot :: Behavior [Circle])
                 <- accumB [] $ unions
-                    [ addShot <$> (toCircle 10 <$> (filterJust $ justPressed <$> emouse))
+                    [ addShot <$> (((\a b->if a then (Just b) else Nothing) <$> bShooting <*> bPlayerPosition) <@ etick2 )
                     , moveShot <$ etick
                     ]
         
-
         (bRainDrops :: Behavior [Circle])
                 <- accumB [Circle 20 10 10, Circle 50 10 10] $ unions
                     [ collisionWithShots <$>  bShot <@ (fallingDrops <$ etick)
                     --, (collisionWithShots <$> bShot <@ etick) 
                     ]
+        
+        
+        
+        (bShooting :: Behavior Bool)
+            <- stepper False $ (filterJust $ justPressed <$> emouse)
+              
+              
+                   
+        
+        
+        
+        
+        
         
         bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShot <*> bRainDrops ) <@ etick
       
@@ -57,8 +71,6 @@ main = start $ do
   actuate network
 
   return ()
-
-
 
 render :: Circle -> [Circle] -> [Circle] -> DC a -> Rect -> IO ()
 render circle shots circles dc viewArea = do
@@ -85,11 +97,13 @@ fallingDrops circles = (moveY 1) <$> circles
 moveShot :: [Circle] -> [Circle]
 moveShot circles = filter ((>(-20)).(getY)) $ (moveY (-1)) <$> circles
 
-addShot :: Circle -> [Circle] -> [Circle]
-addShot circle circles = circle:circles
+addShot :: Maybe Circle -> [Circle] -> [Circle]
+addShot Nothing circles = circles
+addShot (Just circle) circles = circle:circles
 
-justPressed :: EventMouse -> Maybe Point
-justPressed (MouseLeftDown pt _) = Just pt
+justPressed :: EventMouse -> Maybe Bool
+justPressed (MouseLeftDown _ _) = Just True
+justPressed (MouseLeftUp _ _) = Just False
 justPressed _ = Nothing
 
 justMove :: EventMouse -> Maybe Point
