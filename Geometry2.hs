@@ -1,4 +1,4 @@
-module Geometry
+module Geometry2
 ( 
    Circle(..)
  , toCircle
@@ -6,13 +6,11 @@ module Geometry
  , intersects
  , intersectsList
  , differenceVector
- , setRadius
 ) where
 import Graphics.UI.WX.Types
 
 data Circle = Circle {
-      getX :: Int
-    , getY :: Int
+      getCenter :: Vec
     , getRadius :: Int
 } deriving (Show)
       
@@ -33,9 +31,6 @@ toCircle radius point = Circle (pointX point) (pointY point) radius
 
 circleToVec :: Circle -> Vec
 circleToVec circle = Vec (getX circle) (getY circle)
-
-setRadius :: Int -> Circle -> Circle
-setRadius r c = Circle (getX c) (getY c) r 
 
 -- vector operations
 addV :: Vec -> Vec -> Vec
@@ -94,14 +89,5 @@ angle v1 v2 = acos (fromIntegral (dot v1 v2) / (norm v1 * norm v2))
 changeDir :: Vec -> Float -> Vec
 changeDir (Vec x y) alpha = Vec u v
         where u = round (fromIntegral x * cos(alpha) + fromIntegral y * sin(alpha))  
-              v = round (fromIntegral (-x) * sin(alpha) + fromIntegral y * cos(alpha))
-
-
-
-
-
-
-
-
-
+              v = round (fromIntegral (-x) * sin(alpha) + fromIntegral y * cos(alpha)) 
 

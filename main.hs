@@ -37,7 +37,7 @@ main = start $ do
         
         (bShot :: Behavior [Circle])
                 <- accumB [] $ unions
-                    [ addShot <$> (((\a b->if a then (Just b) else Nothing) <$> bShooting <*> bPlayerPosition) <@ etick2 )
+                    [ addShot <$> (((\a b->if a then (Just b) else Nothing) <$> bShooting <*> (fmap (setRadius 5) bPlayerPosition)) <@ etick2 )
                     , moveShot <$ etick
                     ]
         
