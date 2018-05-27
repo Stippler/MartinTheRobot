@@ -5,7 +5,6 @@ module Geometry
  , moveY
  , intersects
  , intersectsList
- , fallingWithGravity
  , differenceVector
 ) where
 import Graphics.UI.WX.Types
@@ -24,9 +23,9 @@ data Vec = Vec {
 data CircleVec = CircleVec {
       getCircle :: Circle
     , getVec :: Vec
-}
+} deriving (Show)
 
-tslf=10
+tslf=10 -- time since last frame
 
 addV :: Vec -> Vec -> Vec
 addV (Vec x1 y1) (Vec x2 y2) = Vec (x1+x2) (y1+y2)
@@ -35,13 +34,13 @@ scalV :: Vec -> Int -> Vec
 scalV (Vec x1 y1) scalar = Vec (x1*scalar) (y1*scalar)
 
 move :: CircleVec -> CircleVec
-move CircleVec (Circle x y r) (Vec vx vy) = CircleVec (Circle (x+vx) (y+vy)) (Vec vx vy)
+move (CircleVec (Circle x y r) (Vec vx vy)) = CircleVec (Circle (x+vx) (y+vy) r) (Vec vx vy)
 
 moveAcc :: CircleVec -> CircleVec
-moveAcc CircleVec circle vec=move (CircleVec circle (gravity vec)) 
+moveAcc (CircleVec circle vec) = move (CircleVec circle (gravity vec)) 
 
 gravity :: Vec -> Vec
-gravity Vec x y = Vec x (y+1)
+gravity (Vec x y) = Vec x (y+1)
 
 toCircle :: Int -> Point2 Int  -> Circle
 toCircle radius point = Circle (pointX point) (pointY point) radius
@@ -66,21 +65,26 @@ differenceVector :: Circle -> Circle -> Point2 Int
 differenceVector c1 c2 = Point (getX c1 - getX c2) (getY c1 - getY c2) 
 
 -- 
-rebound :: Circle -> Circle -> Point2 Int
-rebound shot drop = changeDir velDrop (-1)*alpha -- + "fallverhalten" des regentropfens
-	where d = differenceVector drop shot
-	  alpha = angle (differenceVector shot drop) drop 
-	      -- velDrop = velocity of raindrop
+--rebound :: Circle -> Circle -> Point2 Int
+--rebound shot drop = changeDir velDrop (-1)*alpha -- + "fallverhalten" des regentropfens
+--	where d = differenceVector drop shot
+--	      alpha = angle (-1)*d drop 
+--              velDrop = Point 0 1       -- velDrop = velocity of raindrop
 
-dot :: Point2 Int -> Point2 Int -> Int
-dot p1 p2 = (pointX p1 * pointX p2) + (pointY p1 * pointY p2)
+dot :: Vec -> Vec -> Int
+dot (Vec u v) (Vec x y) = (u*x) + (v*y)
+
+norm :: (Num a, Floating a) => Vec -> a
+norm v = sqrt.fromIntegral $ dot v v
 
 -- Signatur wird nicht passen
-angle :: Point2 Int -> Point2 Int -> Float
-angle v1 v2 = acos(dot v1 v2 / (sqrt $ dot v1 v1)*(sqrt $ dot v2 v2))
+angle :: Vec -> Vec -> Float
+angle v1 v2 = acos (fromIntegral (dot v1 v2) / (norm v1 * norm v2))
 
-changeDir :: Point2 Int -> Float -> Point2 Int
-changeDir (Point x y) alpha = Point (x*cos(alpha) + y*sin(alpha)) (-x*sin(alpha) + y*cos(alpha))
+changeDir :: Vec -> Float -> Vec
+changeDir (Vec x y) alpha = Vec u v
+        where u = round (fromIntegral x * cos(alpha) + fromIntegral y * sin(alpha))  
+              v = round (fromIntegral (-x) * sin(alpha) + fromIntegral y * cos(alpha))
 
 
 
