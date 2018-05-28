@@ -42,7 +42,7 @@ main = start $ do
                     ]
         
         (bRainDrops :: Behavior [Circle])
-                <- accumB [Circle 20 10 10, Circle 50 10 10] $ unions
+                <- accumB ((map Circle [10, 110..810] <*> [350] <*> [10])++(map Circle [60, 160..760] <*> [300] <*> [10])) $ unions
                     [ collisionWithShots <$>  bShot <@ (fallingDrops <$ etick)
                     --, (collisionWithShots <$> bShot <@ etick) 
                     ]
@@ -89,7 +89,7 @@ renderCircle dc circle = do
 collisionWithShots :: [Circle] -> [Circle] -> [Circle]
 collisionWithShots [] [] = []
 collisionWithShots [] drops = drops
-collisionWithShots shots drops = filter (not . (intersectsList shots)) drops
+collisionWithShots shots drops = filter (not . (intersectsList shots)) drops ++ (map (getCircle.move) $ concat (map (rebound drops) shots)) -- update: moves drops once when hit
 
 fallingDrops :: [Circle] -> [Circle]
 fallingDrops circles = (moveY 1) <$> circles

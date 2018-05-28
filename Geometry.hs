@@ -1,12 +1,15 @@
 module Geometry
 ( 
    Circle(..)
+ , CircleVec(..)
  , toCircle
  , moveY
  , intersects
  , intersectsList
- , differenceVector
+ , differenceVec
  , setRadius
+ , rebound
+ , move
 ) where
 import Graphics.UI.WX.Types
 
@@ -26,6 +29,11 @@ data CircleVec = CircleVec {
     , getVec :: Vec
 } deriving (Show)
 
+data BoolVec = BoolVec {
+      bvBool :: Bool
+    , bvVec :: Vec
+}
+
 tslf=10 -- time since last frame
 
 toCircle :: Int -> Point2 Int  -> Circle
@@ -37,12 +45,21 @@ circleToVec circle = Vec (getX circle) (getY circle)
 setRadius :: Int -> Circle -> Circle
 setRadius r c = Circle (getX c) (getY c) r 
 
+differenceVec :: Circle -> Circle -> Vec
+differenceVec c1 c2 = Vec (getX c1 - getX c2) (getY c1 - getY c2)  
+
 -- vector operations
 addV :: Vec -> Vec -> Vec
 addV (Vec x1 y1) (Vec x2 y2) = Vec (x1+x2) (y1+y2)
 
 scalV :: Vec -> Int -> Vec
 scalV (Vec x1 y1) scalar = Vec (x1*scalar) (y1*scalar)
+
+dot :: Vec -> Vec -> Int
+dot (Vec u v) (Vec x y) = (u*x) + (v*y)
+
+norm :: (Num a, Floating a) => Vec -> a
+norm v = sqrt.fromIntegral $ dot v v
 
 -- movement
 move :: CircleVec -> CircleVec
@@ -57,37 +74,7 @@ gravity (Vec x y) = Vec x (y+1)
 moveY :: Int -> Circle -> Circle
 moveY dy (Circle x y r) = if y>500 then (Circle x (0-2*r+dy) r) else (Circle x (y+dy) r)
 
--- collisions
-intersects :: Circle -> Circle -> Bool
-intersects c1 c2 = distance² c1 c2 <= (getRadius c1 + getRadius c2)^2
 
-intersectsList :: [Circle] -> Circle -> Bool
-intersectsList circles c1 = any (intersects c1) circles
-
-distance² :: Circle -> Circle -> Int
-distance² c1 c2 = (getX c1 - getX c2)^2 + (getY c1 - getY c2)^2
-
--- löschen:
-fallingWithGravity :: Circle -> Int -> Int -> Circle
-fallingWithGravity (Circle x y r) t0 t = Circle x (y+5*(t-t0)^2) r
-
-differenceVector :: Circle -> Circle -> Point2 Int
-differenceVector c1 c2 = Point (getX c1 - getX c2) (getY c1 - getY c2) 
-
--- 
---rebound :: Circle -> Circle -> Point2 Int
---rebound shot drop = changeDir velDrop (-1)*alpha -- + "fallverhalten" des regentropfens
---	where d = differenceVector drop shot
---	      alpha = angle (-1)*d drop 
---              velDrop = Point 0 1       -- velDrop = velocity of raindrop
-
-dot :: Vec -> Vec -> Int
-dot (Vec u v) (Vec x y) = (u*x) + (v*y)
-
-norm :: (Num a, Floating a) => Vec -> a
-norm v = sqrt.fromIntegral $ dot v v
-
--- Signatur wird nicht passen
 angle :: Vec -> Vec -> Float
 angle v1 v2 = acos (fromIntegral (dot v1 v2) / (norm v1 * norm v2))
 
@@ -96,7 +83,25 @@ changeDir (Vec x y) alpha = Vec u v
         where u = round (fromIntegral x * cos(alpha) + fromIntegral y * sin(alpha))  
               v = round (fromIntegral (-x) * sin(alpha) + fromIntegral y * cos(alpha))
 
+-- collisions
+intersects :: Circle -> Circle -> BoolVec
+intersects c1 c2 = BoolVec (distance² c1 c2 <= (getRadius c1 + getRadius c2)^2) (differenceVec c1 c2)
 
+intersectsList :: [Circle] -> Circle -> Bool
+intersectsList circles c1 = or $ map fst (iii circles c1) 
+
+iii :: [Circle] -> Circle -> [(Bool, CircleVec)]
+iii circles c1 = zip (map bvBool bvList) $ zipWith CircleVec circles (map bvVec bvList)
+              where bvList = map (intersects c1) circles
+
+-- change dir if intersect. for now: dir of raindrops assumed to be (0 1)
+rebound :: [Circle] -> Circle -> [CircleVec]
+rebound circles c1 = zipWith CircleVec (map getCircle cvList) (zipWith changeDir (map getVec cvList) angles)
+              where cvList = map snd $ filter fst (iii circles c1) -- circles, which intersect
+                    angles = map (angle (Vec 0 (-1))) $ map getVec cvList -- desired angles for change
+
+distance² :: Circle -> Circle -> Int
+distance² c1 c2 = (getX c1 - getX c2)^2 + (getY c1 - getY c2)^2 
 
 
 
