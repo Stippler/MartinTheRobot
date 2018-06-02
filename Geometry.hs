@@ -1,107 +1,135 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Geometry
 ( 
    Circle(..)
  , CircleVec(..)
- , toCircle
- , moveY
- , intersects
- , intersectsList
- , differenceVec
- , setRadius
- , rebound
+ , Vec(..)
+-- , moveY
+-- , intersects
+-- , intersectsList
+-- , differenceVec
+-- , setRadius
+-- , rebound
  , move
+ , moveAcc
+ , collision
 ) where
-import Graphics.UI.WX.Types
+
+import Control.Lens
+import Data.Function
+
+data CircleVec = CircleVec {
+      _circle :: Circle
+    , _vec :: Vec
+} deriving (Show)
+
+
 
 data Circle = Circle {
-      getX :: Int
-    , getY :: Int
-    , getRadius :: Int
+      _x :: Float
+    , _y :: Float
+    , _r :: Float
 } deriving (Show)
       
 data Vec = Vec {
-      xx :: Int
-    , yy :: Int
+      _vx :: Float
+    , _vy :: Float
 } deriving (Show)
 
-data CircleVec = CircleVec {
-      getCircle :: Circle
-    , getVec :: Vec
-} deriving (Show)
+makeLenses ''CircleVec
+makeLenses ''Circle
+makeLenses ''Vec
 
-data BoolVec = BoolVec {
-      bvBool :: Bool
-    , bvVec :: Vec
-}
+--data BoolVec = BoolVec {
+--      bvBool :: Bool
+--    , bvVec :: Vec
+--}
 
-tslf=10 -- time since last frame
+tslf = 10 -- time since last frame
 
-toCircle :: Int -> Point2 Int  -> Circle
-toCircle radius point = Circle (pointX point) (pointY point) radius
+-- circleToVec :: Circle -> Vec
+-- circleToVec circle = Vec (getX circle) (getY circle)
 
-circleToVec :: Circle -> Vec
-circleToVec circle = Vec (getX circle) (getY circle)
+-- setRadius :: Float -> Circle -> Circle
+-- setRadius r c = Circle (getX c) (getY c) r 
 
-setRadius :: Int -> Circle -> Circle
-setRadius r c = Circle (getX c) (getY c) r 
-
-differenceVec :: Circle -> Circle -> Vec
-differenceVec c1 c2 = Vec (getX c1 - getX c2) (getY c1 - getY c2)  
+distVec :: Circle -> Circle -> Vec
+distVec c1 c2 = Vec (c1^.x - c2^.x) (c1^.y - c2^.y)  
 
 -- vector operations
 addV :: Vec -> Vec -> Vec
-addV (Vec x1 y1) (Vec x2 y2) = Vec (x1+x2) (y1+y2)
+addV v1 v2 = Vec (v1^.vx+v2^.vx) (v1^.vy+v2^.vy)
 
-scalV :: Vec -> Int -> Vec
-scalV (Vec x1 y1) scalar = Vec (x1*scalar) (y1*scalar)
+scalV :: Vec -> Float -> Vec
+scalV v scalar = Vec (v^.vx*scalar) (v^.vy*scalar)
 
-dot :: Vec -> Vec -> Int
-dot (Vec u v) (Vec x y) = (u*x) + (v*y)
+dot :: Vec -> Vec -> Float
+dot v1 v2 = (v1^.vx*v2^.vx) + (v1^.vy*v2^.vy)
 
-norm :: (Num a, Floating a) => Vec -> a
-norm v = sqrt.fromIntegral $ dot v v
+norm :: Vec -> Float
+norm v = sqrt $ dot v v
+
+normed :: Vec -> Vec
+normed v = scalV v (1/length)
+    where length = norm v
 
 -- movement
 move :: CircleVec -> CircleVec
-move (CircleVec (Circle x y r) (Vec vx vy)) = CircleVec (Circle (x+vx) (y+vy) r) (Vec vx vy)
+--move (CircleVec circle vec) = CircleVec (circle.x +~ vec^.)
+move cv = cv & circle.x +~ (cv^.vec^.vx) & circle.y  +~ (cv^.vec^.vy) 
 
-moveAcc :: CircleVec -> CircleVec
-moveAcc (CircleVec circle vec) = move (CircleVec circle (gravity vec)) 
+moveAcc :: Float -> CircleVec -> CircleVec
+moveAcc gravity cv = (vec.vy +~ gravity) . move $ cv
 
-gravity :: Vec -> Vec
-gravity (Vec x y) = Vec x (y+1)
-
-moveY :: Int -> Circle -> Circle
-moveY dy (Circle x y r) = if y>500 then (Circle x (0-2*r+dy) r) else (Circle x (y+dy) r)
-
+--moveY :: Float -> Circle -> Circle
+--moveY dy (Circle x y r) = if y>500 then (Circle x (0-2*r+dy) r) else (Circle x (y+dy) r)
 
 angle :: Vec -> Vec -> Float
-angle v1 v2 = acos (fromIntegral (dot v1 v2) / (norm v1 * norm v2))
+angle v1 v2 = acos ( (dot v1 v2) / (norm v1 * norm v2))
 
 changeDir :: Vec -> Float -> Vec
 changeDir (Vec x y) alpha = Vec u v
-        where u = round (fromIntegral x * cos(alpha) + fromIntegral y * sin(alpha))  
-              v = round (fromIntegral (-x) * sin(alpha) + fromIntegral y * cos(alpha))
+        where u = x * cos(alpha) +  y * sin(alpha)
+              v = (-x) * sin(alpha) +  y * cos(alpha)
 
 -- collisions
-intersects :: Circle -> Circle -> BoolVec
-intersects c1 c2 = BoolVec (distance² c1 c2 <= (getRadius c1 + getRadius c2)^2) (differenceVec c1 c2)
+intersects :: Circle -> Circle -> Bool
+intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 
-intersectsList :: [Circle] -> Circle -> Bool
-intersectsList circles c1 = or $ map fst (iii circles c1) 
+collision :: ([CircleVec], [CircleVec]) -> ([CircleVec], [CircleVec])
+collision (shots, drops) =  (filter (not . (intersectsList drops)) shots, collision12 drops shots)
 
-iii :: [Circle] -> Circle -> [(Bool, CircleVec)]
-iii circles c1 = zip (map bvBool bvList) $ zipWith CircleVec circles (map bvVec bvList)
-              where bvList = map (intersects c1) circles
+collision12 :: [CircleVec] -> [CircleVec] -> [CircleVec]
+collision12 drops [] = drops
+collision12 drops (x:xs) = collision12 (collision1 drops (x^.circle)) xs
+
+collision1 :: [CircleVec] -> Circle -> [CircleVec]
+collision1 circlevecs c = map (\ drop -> if intersects c $ drop^.circle then collision2 drop c else drop) circlevecs
+--        where help1 = intersects circle
+
+collision2 :: CircleVec -> Circle -> CircleVec
+collision2 cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
+           where v = distVec (cv^.circle) c
+
+intersectsList :: [CircleVec] -> CircleVec -> Bool
+intersectsList circles c1 = any ((intersects (c1^.circle)) . _circle) circles
+-- or $ map fst (iii circles c1) 
+
+--iii :: [Circle] -> Circle -> [(Bool, CircleVec)]
+--iii circles c1 = zip (map bvBool bvList) $ zipWith CircleVec circles (map bvVec bvList)
+--              where bvList = map (intersects c1) circles
 
 -- change dir if intersect. for now: dir of raindrops assumed to be (0 1)
-rebound :: [Circle] -> Circle -> [CircleVec]
-rebound circles c1 = zipWith CircleVec (map getCircle cvList) (zipWith changeDir (map getVec cvList) angles)
-              where cvList = map snd $ filter fst (iii circles c1) -- circles, which intersect
-                    angles = map (angle (Vec 0 (-1))) $ map getVec cvList -- desired angles for change
+--rebound :: [Circle] -> Circle -> [CircleVec]
+--rebound circles c1 = zipWith CircleVec (map getCircle cvList) (zipWith changeDir (map getVec cvList) angles)
+--              where cvList = map snd $ filter fst (iii circles c1) -- circles, which intersect
+--                    angles = map (angle (Vec 0 (-1))) $ map getVec cvList -- desired angles for change
 
-distance² :: Circle -> Circle -> Int
-distance² c1 c2 = (getX c1 - getX c2)^2 + (getY c1 - getY c2)^2 
+distance² :: Circle -> Circle -> Float
+distance² c1 c2 = dx*dx + dy * dy 
+       where dx = c1^.x - c2^.x
+             dy = c1^.y - c2^.y
 
 
 

@@ -6,6 +6,7 @@ import Graphics.UI.WX hiding (Event)
 import Reactive.Banana 
 import Reactive.Banana.WX hiding (compile)
 import Geometry
+import Data.Function
 
 width = 800
 height = 600
@@ -35,32 +36,31 @@ main = start $ do
             <- stepper (Circle 0 0 0) $
                  toCircle 15 <$> (filterJust $ justMove <$> emouse)
         
-        (bShot :: Behavior [Circle])
-                <- accumB [] $ unions
-                    [ addShot <$> (((\a b->if a then (Just b) else Nothing) <$> bShooting <*> (fmap (setRadius 5) bPlayerPosition)) <@ etick2 )
-                    , moveShot <$ etick
-                    ]
+        (bShotsDrops :: Behavior ([CircleVec],[CircleVec]))
+            <- accumB ([], []) $ unions
+                 [ addShot <$> (((\a b->if a then (Just b) else Nothing) <$> bShooting <*> (circle . r .~ 5 <$> bPlayerPosition)) <@ etick2 )
+                 , collision . move <$ etick
+                 ]
         
-        (bRainDrops :: Behavior [Circle])
-                <- accumB ((map Circle [10, 110..810] <*> [350] <*> [10])++(map Circle [60, 160..760] <*> [300] <*> [10])) $ unions
-                    [ collisionWithShots <$>  bShot <@ (fallingDrops <$ etick)
-                    --, (collisionWithShots <$> bShot <@ etick) 
-                    ]
+        --(bShot :: Behavior [Circle])
+        --        <- accumB [] $ unions
+        --            [ addShot <$> (((\a b->if a then (Just b) else Nothing) <$> bShooting <*> (circle . r .~ 5 <$> bPlayerPosition)) <@ etick2 )
+        --            , moveShot <$ etick
+        --            ]
+        
+        (--bRainDrops :: Behavior [Circle])
+         --       <- accumB ((map Circle [10, 110..810] <*> [350] <*> [10])++(map Circle [60, 160..760] <*> [300] <*> [10])) $ unions
+         --           [ collisionWithShots <$>  bShot <@ (fallingDrops <$ etick)
+         --           --, (collisionWithShots <$> bShot <@ etick) 
+         --           ]
         
         
         
         (bShooting :: Behavior Bool)
             <- stepper False $ (filterJust $ justPressed <$> emouse)
               
-              
-                   
         
-        
-        
-        
-        
-        
-        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShot <*> bRainDrops ) <@ etick
+        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShotDrops ) <@ etick
       
         sink  p [on paint :== bpaint]
         reactimate $ repaint p <$ etick
@@ -72,8 +72,12 @@ main = start $ do
 
   return ()
 
-render :: Circle -> [Circle] -> [Circle] -> DC a -> Rect -> IO ()
-render circle shots circles dc viewArea = do
+toCircle :: Float -> Point2 Int  -> Circle
+toCircle radius point = Circle $ fromIntegral (pointX point) fromIntegral (pointY point) radius
+
+
+render :: Circle -> ([Circle], [Circle]) -> DC a -> Rect -> IO ()
+render circle (shots, circles) dc viewArea = do
   set dc [brushColor := blue, brushKind := BrushSolid]
   renderCircle dc circle
   set dc [brushColor := red, brushKind := BrushSolid]
@@ -97,9 +101,9 @@ fallingDrops circles = (moveY 1) <$> circles
 moveShot :: [Circle] -> [Circle]
 moveShot circles = filter ((>(-20)).(getY)) $ (moveY (-1)) <$> circles
 
-addShot :: Maybe Circle -> [Circle] -> [Circle]
+addShot :: Maybe Circle -> ([CircleVec], [CircleVec])-> ([CircleVec], [CircleVec])
 addShot Nothing circles = circles
-addShot (Just circle) circles = circle:circles
+addShot (Just circle) (shots, drops) = ((CircleVec circle $ Vec 0 (-2)):shots, drops)
 
 justPressed :: EventMouse -> Maybe Bool
 justPressed (MouseLeftDown _ _) = Just True
