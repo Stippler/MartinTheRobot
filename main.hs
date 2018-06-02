@@ -52,8 +52,10 @@ main = start $ do
         (bShooting :: Behavior Bool)
             <- stepper False $ (filterJust $ justPressed <$> emouse)
               
-              
-                   
+        (bCircleVecs :: Behavior [CircleVec])      
+                   <- accumB [CircleVec (Circle 25 50 10) (Vec 0 1), CircleVec (Circle 75 50 10) (Vec 0 1)] $ unions
+                   [ map move <$ etick 
+                   ]
         
         
         
@@ -79,7 +81,7 @@ render circle shots circles dc viewArea = do
   set dc [brushColor := red, brushKind := BrushSolid]
   mapM (renderCircle dc) circles
   set dc [brushColor := green, brushKind := BrushSolid]
-  mapM (renderCircle dc) shots
+  mapM (renderCircle dc) shots 
   return ()
 
 renderCircle :: DC a -> Circle -> IO ()
@@ -89,7 +91,8 @@ renderCircle dc circle = do
 collisionWithShots :: [Circle] -> [Circle] -> [Circle]
 collisionWithShots [] [] = []
 collisionWithShots [] drops = drops
-collisionWithShots shots drops = filter (not . (intersectsList shots)) drops ++ (map (getCircle.move) $ concat (map (rebound drops) shots)) -- update: moves drops once when hit
+collisionWithShots shots drops = map (getCircle.move) $ rebound drops shots
+--collisionWithShots shots drops = filter (not . (intersectsList shots)) drops ++ (map (getCircle.move) $ concat (map (rebound drops) shots)) -- update: moves drops once when hit
 
 fallingDrops :: [Circle] -> [Circle]
 fallingDrops circles = (moveY 1) <$> circles

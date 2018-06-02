@@ -2,6 +2,7 @@ module Geometry
 ( 
    Circle(..)
  , CircleVec(..)
+ , Vec(..)
  , toCircle
  , moveY
  , intersects
@@ -84,21 +85,28 @@ changeDir (Vec x y) alpha = Vec u v
               v = round (fromIntegral (-x) * sin(alpha) + fromIntegral y * cos(alpha))
 
 -- collisions
-intersects :: Circle -> Circle -> BoolVec
-intersects c1 c2 = BoolVec (distance² c1 c2 <= (getRadius c1 + getRadius c2)^2) (differenceVec c1 c2)
+intersects :: Circle -> Circle -> (Bool, Vec)
+intersects c1 c2 = ((distance² c1 c2 <= (getRadius c1 + getRadius c2)^2), (differenceVec c1 c2))
 
-intersectsList :: [Circle] -> Circle -> Bool
-intersectsList circles c1 = or $ map fst (iii circles c1) 
+--intersectsList :: [Circle] -> Circle -> Bool
+--intersectsList circles c1 = or $ map fst (iii circles c1) 
 
-iii :: [Circle] -> Circle -> [(Bool, CircleVec)]
-iii circles c1 = zip (map bvBool bvList) $ zipWith CircleVec circles (map bvVec bvList)
-              where bvList = map (intersects c1) circles
+--iii :: [Circle] -> Circle -> [(Bool, CircleVec)]
+--iii circles c1 = zip (map bvBool bvList) $ zipWith CircleVec circles (map bvVec bvList)
+--              where bvList = map (intersects c1) circles
 
 -- change dir if intersect. for now: dir of raindrops assumed to be (0 1)
 rebound :: [Circle] -> Circle -> [CircleVec]
-rebound circles c1 = zipWith CircleVec (map getCircle cvList) (zipWith changeDir (map getVec cvList) angles)
-              where cvList = map snd $ filter fst (iii circles c1) -- circles, which intersect
-                    angles = map (angle (Vec 0 (-1))) $ map getVec cvList -- desired angles for change
+--rebound circles c1 = zipWith CircleVec (map getCircle cvList) (zipWith changeDir (map getVec cvList) angles)
+rebound circles c1 = zipWith CircleVec (circles) (zipWith (changeDir $ map snd bvList) angles)
+              where bvList = map (intersects c1) circles
+                    angles = fmap distinguish bvList
+                    --cvList = map snd $ filter fst (iii circles c1) -- circles, which intersect
+                    --angles = map (angle (Vec 0 (-1))) $ map getVec cvList -- desired angles for change
+                    
+distinguish :: (Bool, Vec) -> Vec
+distinguish (b, v) = if b then (angle (Vec 0 (-1)) $ v) else (Vec 0 0)                    
+                    
 
 distance² :: Circle -> Circle -> Int
 distance² c1 c2 = (getX c1 - getX c2)^2 + (getY c1 - getY c2)^2 
