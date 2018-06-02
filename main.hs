@@ -1,4 +1,4 @@
-
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecursiveDo #-}
 
@@ -6,6 +6,8 @@ import Graphics.UI.WX hiding (Event)
 import Reactive.Banana 
 import Reactive.Banana.WX hiding (compile)
 import Geometry
+import Data.Function hiding (on)
+import Control.Lens hiding (set)
 
 width = 800
 height = 600
@@ -35,34 +37,32 @@ main = start $ do
             <- stepper (Circle 0 0 0) $
                  toCircle 15 <$> (filterJust $ justMove <$> emouse)
         
-        (bShot :: Behavior [Circle])
-                <- accumB [] $ unions
-                    [ addShot <$> (((\a b->if a then (Just b) else Nothing) <$> bShooting <*> (fmap (setRadius 5) bPlayerPosition)) <@ etick2 )
-                    , moveShot <$ etick
-                    ]
+        (bShotsDrops :: Behavior ([CircleVec],[CircleVec]))
+            <- accumB ([], [CircleVec (Circle 50 50 30) (Vec 0 0)]) $ unions
+                 [ addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> bPlayerPosition) <@ etick2 )
+                 , (\(shots, drops) -> collision (map move shots, map (moveAcc 0.01) drops) ) <$ etick
+                 ] --collision . 
         
-        (bRainDrops :: Behavior [Circle])
-                <- accumB ((map Circle [10, 110..810] <*> [350] <*> [10])++(map Circle [60, 160..760] <*> [300] <*> [10])) $ unions
-                    [ collisionWithShots <$>  bShot <@ (fallingDrops <$ etick)
-                    --, (collisionWithShots <$> bShot <@ etick) 
-                    ]
+        --(bShot :: Behavior [Circle])
+        --        <- accumB [] $ unions
+        --            [ addShot <$> (((\a b->if a then (Just b) else Nothing) <$> bShooting <*> (circle . r .~ 5 <$> bPlayerPosition)) <@ etick2 )
+        --            , moveShot <$ etick
+        --            ]
+        
+        --(bRainDrops :: Behavior [Circle])
+         --       <- accumB ((map Circle [10, 110..810] <*> [350] <*> [10])++(map Circle [60, 160..760] <*> [300] <*> [10])) $ unions
+         --           [ collisionWithShots <$>  bShot <@ (fallingDrops <$ etick)
+         --           --, (collisionWithShots <$> bShot <@ etick) 
+         --           ]
         
         
         
         (bShooting :: Behavior Bool)
             <- stepper False $ (filterJust $ justPressed <$> emouse)
               
-        (bCircleVecs :: Behavior [CircleVec])      
-                   <- accumB [CircleVec (Circle 25 50 10) (Vec 0 1), CircleVec (Circle 75 50 10) (Vec 0 1)] $ unions
-                   [ map move <$ etick 
-                   ]
+
         
-        
-        
-        
-        
-        
-        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShot <*> bRainDrops ) <@ etick
+        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShotsDrops ) <@ etick
       
         sink  p [on paint :== bpaint]
         reactimate $ repaint p <$ etick
@@ -74,35 +74,34 @@ main = start $ do
 
   return ()
 
-render :: Circle -> [Circle] -> [Circle] -> DC a -> Rect -> IO ()
-render circle shots circles dc viewArea = do
+toCircle :: Float -> Point2 Int  -> Circle
+toCircle radius point = Circle (fromIntegral (pointX point)) (fromIntegral (pointY point)) radius
+
+
+render :: Circle -> ([CircleVec], [CircleVec]) -> DC a -> Rect -> IO ()
+render circle (shots, circles) dc viewArea = do
   set dc [brushColor := blue, brushKind := BrushSolid]
   renderCircle dc circle
   set dc [brushColor := red, brushKind := BrushSolid]
-  mapM (renderCircle dc) circles
+  mapM ((renderCircle dc) . _circle) circles
   set dc [brushColor := green, brushKind := BrushSolid]
-  mapM (renderCircle dc) shots 
+  mapM ((renderCircle dc) . _circle) shots 
   return ()
 
 renderCircle :: DC a -> Circle -> IO ()
-renderCircle dc circle = do
-  Graphics.UI.WX.circle dc (point (getX circle) (getY circle)) (getRadius circle) []
+renderCircle dc c = do
+  Graphics.UI.WX.circle dc (point (round $ c^.x) (round $ c^.y)) (round $ c^.r) []
 
-collisionWithShots :: [Circle] -> [Circle] -> [Circle]
-collisionWithShots [] [] = []
-collisionWithShots [] drops = drops
-collisionWithShots shots drops = map (getCircle.move) $ rebound drops shots
+--collisionWithShots :: [Circle] -> [Circle] -> [Circle]
+--collisionWithShots [] [] = []
+--collisionWithShots [] drops = drops
+--collisionWithShots shots drops = map (getCircle.move) $ rebound drops shots
 --collisionWithShots shots drops = filter (not . (intersectsList shots)) drops ++ (map (getCircle.move) $ concat (map (rebound drops) shots)) -- update: moves drops once when hit
 
-fallingDrops :: [Circle] -> [Circle]
-fallingDrops circles = (moveY 1) <$> circles
 
-moveShot :: [Circle] -> [Circle]
-moveShot circles = filter ((>(-20)).(getY)) $ (moveY (-1)) <$> circles
-
-addShot :: Maybe Circle -> [Circle] -> [Circle]
-addShot Nothing circles = circles
-addShot (Just circle) circles = circle:circles
+addShot :: Maybe Circle -> ([CircleVec], [CircleVec]) -> ([CircleVec], [CircleVec])
+addShot Nothing t = t
+addShot (Just circle) (shots, drops) = ((CircleVec circle $ Vec 0 (-2)):shots, drops)
 
 justPressed :: EventMouse -> Maybe Bool
 justPressed (MouseLeftDown _ _) = Just True
