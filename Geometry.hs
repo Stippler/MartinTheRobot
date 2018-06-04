@@ -37,19 +37,10 @@ data Vec = Vec {
 makeLenses ''CircleVec
 makeLenses ''Circle
 makeLenses ''Vec
-
---data BoolVec = BoolVec {
---      bvBool :: Bool
---    , bvVec :: Vec
---}
-
-tslf = 10 -- time since last frame
-
--- circleToVec :: Circle -> Vec
--- circleToVec circle = Vec (getX circle) (getY circle)
-
--- setRadius :: Float -> Circle -> Circle
--- setRadius r c = Circle (getX c) (getY c) r 
+ 
+tslf = 10 -- time since last frame 
+width = 800
+height = 600
 
 distVec :: Circle -> Circle -> Vec
 distVec c1 c2 = Vec (c1^.x - c2^.x) (c1^.y - c2^.y)  
@@ -91,7 +82,7 @@ changeDir (Vec x y) alpha = Vec u v
               v = (-x) * sin(alpha) +  y * cos(alpha)
 
 -- collisions
-intersects :: Circle -> Circle -> Bool
+intersects :: Circle -> Circle -> Bool 
 intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 
 collision :: ([CircleVec], [CircleVec]) -> ([CircleVec], [CircleVec])
@@ -102,36 +93,16 @@ collision12 drops [] = drops
 collision12 drops (x:xs) = collision12 (collision1 drops (x^.circle)) xs
 
 collision1 :: [CircleVec] -> Circle -> [CircleVec]
-collision1 circlevecs c = map (\ drop -> if intersects c $ drop^.circle then collision2 drop c else drop) circlevecs
---        where help1 = intersects circle
+collision1 circlevecs c = map (\ drop -> if intersects c $ drop^.circle then collision2 drop c else drop) circlevecs 
 
 collision2 :: CircleVec -> Circle -> CircleVec
 collision2 cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
            where v = distVec (cv^.circle) c
 
-intersectsList :: [CircleVec] -> CircleVec -> Bool
-intersectsList circles c1 = any ((intersects (c1^.circle)) . _circle) circles
--- or $ map fst (iii circles c1) 
-
---iii :: [Circle] -> Circle -> [(Bool, CircleVec)]
---iii circles c1 = zip (map bvBool bvList) $ zipWith CircleVec circles (map bvVec bvList)
---              where bvList = map (intersects c1) circles
-
--- change dir if intersect. for now: dir of raindrops assumed to be (0 1)
---rebound :: [Circle] -> Circle -> [CircleVec]
---rebound circles c1 = zipWith CircleVec (map getCircle cvList) (zipWith changeDir (map getVec cvList) angles)
---              where cvList = map snd $ filter fst (iii circles c1) -- circles, which intersect
---                    angles = map (angle (Vec 0 (-1))) $ map getVec cvList -- desired angles for change
+intersectsList :: [CircleVec] -> CircleVec -> Bool 
+intersectsList circles c1 = any ((intersects (c1^.circle)) . _circle) circles 
 
 distance² :: Circle -> Circle -> Float
 distance² c1 c2 = dx*dx + dy * dy 
        where dx = c1^.x - c2^.x
-             dy = c1^.y - c2^.y
-
-
-
-
-
-
-
-
+             dy = c1^.y - c2^.y 

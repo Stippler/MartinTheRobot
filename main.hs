@@ -38,9 +38,9 @@ main = start $ do
                  toCircle 15 <$> (filterJust $ justMove <$> emouse)
         
         (bShotsDrops :: Behavior ([CircleVec],[CircleVec]))
-            <- accumB ([], [CircleVec (Circle 50 50 30) (Vec 0 0)]) $ unions
-                 [ addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> bPlayerPosition) <@ etick2 )
-                 , (\(shots, drops) -> collision (map move shots, map (moveAcc 0.01) drops) ) <$ etick
+            <- accumB ([], [CircleVec (Circle 10 20 10) (Vec 0 0), CircleVec (Circle 60 00 10) (Vec 0 0), CircleVec (Circle 110 (-20) 10) (Vec 0 0), CircleVec (Circle 160 (-40) 10) (Vec 0 0)]) $ unions
+                 [ addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
+                 , (\(shots, drops) -> collision (map move shots, map (moveAcc 0.005) drops) ) <$ etick  
                  ] --collision . 
         
         --(bShot :: Behavior [Circle])
