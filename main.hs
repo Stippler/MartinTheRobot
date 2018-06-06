@@ -23,10 +23,10 @@ main = start $ do
   let networkDescription :: MomentIO ()
       networkDescription = mdo
       
-        etick <- event0 t command
-        etick2 <- event0 t2 command
-        ekey <- event1 p keyboard 
-        emouse <- event1 p mouse -- mouse events
+        etick <- event0 t command   -- timer for updates
+        etick2 <- event0 t2 command -- timer for shooting
+        ekey <- event1 p keyboard   -- keyboard events
+        emouse <- event1 p mouse    -- mouse events
 
         let eleft  = filterE ((== KeyLeft ) . keyKey) ekey
             eright = filterE ((== KeyRight) . keyKey) ekey
@@ -41,19 +41,7 @@ main = start $ do
             <- accumB ([], [CircleVec (Circle 10 20 10) (Vec 0 0), CircleVec (Circle 60 00 10) (Vec 0 0), CircleVec (Circle 110 (-20) 10) (Vec 0 0), CircleVec (Circle 160 (-40) 10) (Vec 0 0)]) $ unions
                  [ addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
                  , (\(shots, drops) -> collision (map move shots, map (moveAcc 0.005) drops) ) <$ etick  
-                 ] --collision . 
-        
-        --(bShot :: Behavior [Circle])
-        --        <- accumB [] $ unions
-        --            [ addShot <$> (((\a b->if a then (Just b) else Nothing) <$> bShooting <*> (circle . r .~ 5 <$> bPlayerPosition)) <@ etick2 )
-        --            , moveShot <$ etick
-        --            ]
-        
-        --(bRainDrops :: Behavior [Circle])
-         --       <- accumB ((map Circle [10, 110..810] <*> [350] <*> [10])++(map Circle [60, 160..760] <*> [300] <*> [10])) $ unions
-         --           [ collisionWithShots <$>  bShot <@ (fallingDrops <$ etick)
-         --           --, (collisionWithShots <$> bShot <@ etick) 
-         --           ]
+                 ]
         
         
         
