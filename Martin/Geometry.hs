@@ -9,8 +9,7 @@ module Geometry
  , CircleVec(..)
  , Vec(..)
  , move
- , moveAcc
- , collision
+ , moveAcc 
 ) where
 
 import Control.Lens
@@ -59,7 +58,10 @@ normed :: Vec -> Vec
 normed v = scalV v (1/length)
     where length = norm v
 
-normalVec
+-- returns normal vector of v
+normalVec :: Vec -> Vec
+normalVec v = Vec ((-1)*v^.vy) (v^.vx)
+
 -----------------------
 -- circle operations --
 -----------------------
@@ -92,7 +94,7 @@ moveAcc acc cv = (vec.vy +~ acc) . move $ cv
 angle :: Vec -> Vec -> Float
 angle v1 v2 = acos ( (dot v1 v2) / (norm v1 * norm v2))
 
--- changes the direction of a vector by a angle
+-- changes the direction of a vector by an angle
 changeDir :: Vec -> Float -> Vec
 changeDir (Vec x y) alpha = Vec u v
         where u = x * cos(alpha) +  y * sin(alpha)
@@ -113,21 +115,11 @@ iterates drops (x:xs) = iterates (checkCollision drops (x^.circle)) xs
 
 -- checks wheather or not there is an collision, if there is one it executes the Function collisionOccured
 checkCollision :: [CircleVec] -> Circle -> [CircleVec]
-checkCollision circlevecs circle = map (\ circlevec -> if intersects circle $ circlevec^.circle then collisionOccured circlevec c else circlevec) circlevecs
+checkCollision circlevecs c = map (\ circlevec -> if intersects c $ circlevec^.circle then collisionOccured circlevec c else circlevec) circlevecs
+
 
 -- changes the first parameter accordingly
 collisionOccured :: CircleVec -> Circle -> CircleVec
 collisionOccured cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
            where v = distVec (cv^.circle) c
-
-
-
-
-
-
-
-
-
-
-
-
+ 
