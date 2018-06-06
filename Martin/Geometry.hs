@@ -105,13 +105,6 @@ intersects :: Circle -> Circle -> Bool
 intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 
 
--- filters out the 
---filterIntersection :: [CircleVec] -> [CircleVec] -> [CircleVec]
---filterIntersection drops [] = drops
---filterIntersection drops (x:xs) = collision12 (collision1 drops (x^.circle)) xs
-
-collision1 :: [CircleVec] -> Circle -> [CircleVec]
-collision1 circlevecs c = map (\ drop -> if intersects c $ drop^.circle then collision2 drop c else drop) circlevecs
 
 collision2 :: CircleVec -> Circle -> CircleVec
 collision2 cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
