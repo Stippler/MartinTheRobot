@@ -9,8 +9,7 @@ module Geometry
  , CircleVec(..)
  , Vec(..)
  , move
- , moveAcc
- , collision
+ , moveAcc 
 ) where
 
 import Control.Lens
@@ -59,7 +58,10 @@ normed :: Vec -> Vec
 normed v = scalV v (1/length)
     where length = norm v
 
-normalVec
+-- returns normal vector of v
+normalVec :: Vec -> Vec
+normalVec v = Vec ((-1)*v^.vy) (v^.vx)
+
 -----------------------
 -- circle operations --
 -----------------------
@@ -92,7 +94,7 @@ moveAcc acc cv = (vec.vy +~ acc) . move $ cv
 angle :: Vec -> Vec -> Float
 angle v1 v2 = acos ( (dot v1 v2) / (norm v1 * norm v2))
 
--- changes the direction of a vector by a angle
+-- changes the direction of a vector by an angle
 changeDir :: Vec -> Float -> Vec
 changeDir (Vec x y) alpha = Vec u v
         where u = x * cos(alpha) +  y * sin(alpha)
@@ -104,9 +106,9 @@ intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 
 
 -- filters out the 
-filterIntersection :: [CircleVec] -> [CircleVec] -> [CircleVec]
-filterIntersection drops [] = drops
-filterIntersection drops (x:xs) = collision12 (collision1 drops (x^.circle)) xs
+--filterIntersection :: [CircleVec] -> [CircleVec] -> [CircleVec]
+--filterIntersection drops [] = drops
+--filterIntersection drops (x:xs) = collision12 (collision1 drops (x^.circle)) xs
 
 collision1 :: [CircleVec] -> Circle -> [CircleVec]
 collision1 circlevecs c = map (\ drop -> if intersects c $ drop^.circle then collision2 drop c else drop) circlevecs
@@ -114,15 +116,4 @@ collision1 circlevecs c = map (\ drop -> if intersects c $ drop^.circle then col
 collision2 :: CircleVec -> Circle -> CircleVec
 collision2 cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
            where v = distVec (cv^.circle) c
-
-
-
-
-
-
-
-
-
-
-
-
+ 
