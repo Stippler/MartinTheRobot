@@ -6,7 +6,6 @@ import Graphics.UI.WX hiding (Event)
 import Reactive.Banana 
 import Reactive.Banana.WX hiding (compile)
 import Object
-import Geometry
 import Data.Function hiding (on)
 import Control.Lens hiding (set)
 
@@ -19,7 +18,7 @@ main = start $ do
   p <- panel f [ ]
   -- set f [ layout := minsize (sz width height) $ widget p ]
   t <- timer f [ interval := 10 ]
-  t2 <- timer f [ interval := 100 ]
+  t2 <- timer f [ interval := 300 ]
   
   let networkDescription :: MomentIO ()
       networkDescription = mdo
@@ -35,16 +34,14 @@ main = start $ do
             edown  = filterE ((== KeyDown ) . keyKey) ekey
                 
         (bPlayerPosition :: Behavior (Martin))
-            <- stepper (Circle 0 0 0) $
-                 toCircle 15 <$> (filterJust $ justMove <$> emouse)
+            <- stepper (initialMartin) $
+                 updateMartin <$> (filterJust $ justMove <$> emouse)
         
         (bShotsDrops :: Behavior (Shots,Drops))
-            <- accumB ([], [CircleVec (Circle 10 20 10) (Vec 0 0), CircleVec (Circle 60 00 10) (Vec 0 0), CircleVec (Circle 110 (-20) 10) (Vec 0 0), CircleVec (Circle 160 (-40) 10) (Vec 0 0)]) $ unions
+            <- accumB ([], initialDrops) $ unions
                  [ addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
-                 , (\(shots, drops) -> reboundShotDropPair (map move shots, map (moveAcc 0.005) drops) ) <$ etick  
+                 , updateDropShotPair <$ etick  
                  ]
-        
-        
         
         (bShooting :: Behavior Bool)
             <- stepper False $ (filterJust $ justPressed <$> emouse)
@@ -62,29 +59,6 @@ main = start $ do
   actuate network
 
   return ()
-
-toCircle :: Float -> Point2 Int  -> Circle
-toCircle radius point = Circle (fromIntegral (pointX point)) (fromIntegral (pointY point)) radius
-
-
-render :: Circle -> ([CircleVec], [CircleVec]) -> DC a -> Rect -> IO ()
-render circle (shots, circles) dc viewArea = do
-  set dc [brushColor := blue, brushKind := BrushSolid]
-  renderCircle dc circle
-  set dc [brushColor := red, brushKind := BrushSolid]
-  mapM ((renderCircle dc) . _circle) circles
-  set dc [brushColor := green, brushKind := BrushSolid]
-  mapM ((renderCircle dc) . _circle) shots 
-  return ()
-
-renderCircle :: DC a -> Circle -> IO ()
-renderCircle dc c = do
-  Graphics.UI.WX.circle dc (point (round $ c^.x) (round $ c^.y)) (round $ c^.r) []
-
-
-addShot :: Maybe Circle -> ([CircleVec], [CircleVec]) -> ([CircleVec], [CircleVec])
-addShot Nothing t = t
-addShot (Just circle) (shots, drops) = ((CircleVec circle $ Vec 0 (-2)):shots, drops)
 
 justPressed :: EventMouse -> Maybe Bool
 justPressed (MouseLeftDown _ _) = Just True
