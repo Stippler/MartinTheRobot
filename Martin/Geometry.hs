@@ -10,10 +10,13 @@ module Geometry
  , Vec(..)
  , move
  , moveAcc 
+ , intersectsList
+ , iterates
 ) where
 
 import Control.Lens
 import Data.Function
+import Data.Fixed (mod')
 
 data CircleVec = CircleVec {
       _circle :: Circle
@@ -38,6 +41,9 @@ makeLenses ''Circle
 makeLenses ''Vec
 
 tslf = 10 -- time since last frame
+-- size of window
+width = 800
+height = 600
 
 -----------------------
 -- vector operations --
@@ -82,9 +88,12 @@ distVec c1 c2 = Vec (c1^.x - c2^.x) (c1^.y - c2^.y)
 -- movement --
 --------------
 
--- moves a CircleVec by adding vx and vy of vec to x and y of the circles
+-- moves a CircleVec by adding vx and vy of vec to x and y of the circles; window is almost a torus
 move :: CircleVec -> CircleVec
-move cv = cv & circle.x +~ (cv^.vec^.vx) & circle.y  +~ (cv^.vec^.vy) 
+move cv = cv & circle.x .~ (mod' xNew width) & circle.y  .~ yNew
+        where xNew = cv^.circle^.x + cv^.vec^.vx
+              yAux = cv^.circle^.y + cv^.vec^.vy 
+              yNew = if yAux > (cv^.circle^.r + height) then mod' yAux (cv^.circle^.r + height) else yAux
 
 -- calls move and adds an acceleration to the y vector afterwards (used for gravity)
 moveAcc :: Float -> CircleVec -> CircleVec
@@ -112,12 +121,11 @@ intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 iterates :: [CircleVec] -> [CircleVec] -> [CircleVec]
 iterates drops [] = drops
 iterates drops (x:xs) = iterates (checkCollision drops (x^.circle)) xs
-
+ 
 -- checks wheather or not there is an collision, if there is one it executes the Function collisionOccured
 checkCollision :: [CircleVec] -> Circle -> [CircleVec]
 checkCollision circlevecs c = map (\ circlevec -> if intersects c $ circlevec^.circle then collisionOccured circlevec c else circlevec) circlevecs
-
-
+ 
 -- changes the first parameter accordingly
 collisionOccured :: CircleVec -> Circle -> CircleVec
 collisionOccured cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
