@@ -98,21 +98,26 @@ changeDir (Vec x y) alpha = Vec u v
         where u = x * cos(alpha) +  y * sin(alpha)
               v = (-x) * sin(alpha) +  y * cos(alpha)
 
+---------------
+-- collision --
+---------------
+
 -- checks if two circles overlap
 intersects :: Circle -> Circle -> Bool
 intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 
+-- iterates over the list of CircleVecs (second parameter) and passes one element of the second parameter and the first parameter to checkCollision
+iterates :: [CircleVec] -> [CircleVec] -> [CircleVec]
+iterates drops [] = drops
+iterates drops (x:xs) = iterates (checkCollision drops (x^.circle)) xs
 
--- filters out the 
-filterIntersection :: [CircleVec] -> [CircleVec] -> [CircleVec]
-filterIntersection drops [] = drops
-filterIntersection drops (x:xs) = collision12 (collision1 drops (x^.circle)) xs
+-- checks wheather or not there is an collision, if there is one it executes the Function collisionOccured
+checkCollision :: [CircleVec] -> Circle -> [CircleVec]
+checkCollision circlevecs circle = map (\ circlevec -> if intersects circle $ circlevec^.circle then collisionOccured circlevec c else circlevec) circlevecs
 
-collision1 :: [CircleVec] -> Circle -> [CircleVec]
-collision1 circlevecs c = map (\ drop -> if intersects c $ drop^.circle then collision2 drop c else drop) circlevecs
-
-collision2 :: CircleVec -> Circle -> CircleVec
-collision2 cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
+-- changes the first parameter accordingly
+collisionOccured :: CircleVec -> Circle -> CircleVec
+collisionOccured cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
            where v = distVec (cv^.circle) c
 
 
