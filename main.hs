@@ -5,6 +5,7 @@
 import Graphics.UI.WX hiding (Event)
 import Reactive.Banana 
 import Reactive.Banana.WX hiding (compile)
+import Object
 import Geometry
 import Data.Function hiding (on)
 import Control.Lens hiding (set)
@@ -33,14 +34,14 @@ main = start $ do
             eup    = filterE ((== KeyUp   ) . keyKey) ekey
             edown  = filterE ((== KeyDown ) . keyKey) ekey
                 
-        (bPlayerPosition :: Behavior (Circle))
+        (bPlayerPosition :: Behavior (Martin))
             <- stepper (Circle 0 0 0) $
                  toCircle 15 <$> (filterJust $ justMove <$> emouse)
         
-        (bShotsDrops :: Behavior ([CircleVec],[CircleVec]))
+        (bShotsDrops :: Behavior (Shots,Drops))
             <- accumB ([], [CircleVec (Circle 10 20 10) (Vec 0 0), CircleVec (Circle 60 00 10) (Vec 0 0), CircleVec (Circle 110 (-20) 10) (Vec 0 0), CircleVec (Circle 160 (-40) 10) (Vec 0 0)]) $ unions
                  [ addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
-                 , (\(shots, drops) -> collision (map move shots, map (moveAcc 0.005) drops) ) <$ etick  
+                 , (\(shots, drops) -> reboundShotDropPair (map move shots, map (moveAcc 0.005) drops) ) <$ etick  
                  ]
         
         
@@ -79,12 +80,6 @@ render circle (shots, circles) dc viewArea = do
 renderCircle :: DC a -> Circle -> IO ()
 renderCircle dc c = do
   Graphics.UI.WX.circle dc (point (round $ c^.x) (round $ c^.y)) (round $ c^.r) []
-
---collisionWithShots :: [Circle] -> [Circle] -> [Circle]
---collisionWithShots [] [] = []
---collisionWithShots [] drops = drops
---collisionWithShots shots drops = map (getCircle.move) $ rebound drops shots
---collisionWithShots shots drops = filter (not . (intersectsList shots)) drops ++ (map (getCircle.move) $ concat (map (rebound drops) shots)) -- update: moves drops once when hit
 
 
 addShot :: Maybe Circle -> ([CircleVec], [CircleVec]) -> ([CircleVec], [CircleVec])
