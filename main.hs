@@ -5,7 +5,7 @@
 import Graphics.UI.WX hiding (Event)
 import Reactive.Banana 
 import Reactive.Banana.WX hiding (compile)
-import Geometry
+import Geometry -iMartin
 import Data.Function hiding (on)
 import Control.Lens hiding (set)
 
