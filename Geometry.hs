@@ -95,11 +95,14 @@ distVec c1 c2 = Vec (c1^.x - c2^.x) (c1^.y - c2^.y)
 --------------
 
 -- moves a CircleVec by adding vx and vy of vec to x and y of the circles; window is almost a torus
+-- TODO: if more than 1 drops, change signature to also take some number from a list of 'offset-numbers' like 373 below
 move :: CircleVec -> CircleVec
-move cv = cv & circle.x .~ (mod' xNew width) & circle.y  .~ yNew
-        where xNew = cv^.circle^.x + cv^.vec^.vx
-              yAux = cv^.circle^.y + cv^.vec^.vy 
-              yNew = if yAux > (cv^.circle^.r + height) then mod' yAux (cv^.circle^.r + height) else yAux
+move cv =  if yy > Geometry.height 
+               then cv & circle.x .~ (mod' (vv^.vx + xx + 373) width) & circle.y .~ (-1)*cv^.circle^.r & vec .~ (Vec 0 0)
+               else cv & circle.x .~ (mod' (vv^.vx + xx) width) & circle.y .~ (vv^.vy + yy)
+                   where xx = cv^.circle^.x
+                         yy = cv^.circle^.y
+                         vv = cv^.vec 
 
 -- calls move and adds an acceleration to the y vector afterwards (used for gravity)
 moveAcc :: Float -> CircleVec -> CircleVec
