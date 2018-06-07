@@ -1,6 +1,11 @@
 {-# LANGUAGE CPP#-}
 module Paths (getDataFile) where
 
+
+--getDataFile :: FilePath -> FilePath
+--getDataFile x = unsafePerformIO $ fmap (</> x) getDataDir
+
+{-
 import System.FilePath
 import System.IO.Unsafe
 
@@ -25,3 +30,4 @@ getDataDir = return "../data/"
 
 getDataFile :: FilePath -> FilePath
 getDataFile x = unsafePerformIO $ fmap (</> x) getDataDir
+-}

@@ -7,7 +7,11 @@ module Geometry
  , y
  , r
  , CircleVec(..)
+ , circle
+ , vec
  , Vec(..)
+ , vx
+ , vy
  , move
  , moveAcc 
  , intersectsList
@@ -122,7 +126,7 @@ iterates :: [CircleVec] -> [CircleVec] -> [CircleVec]
 iterates drops [] = drops
 iterates drops (x:xs) = iterates (checkCollision drops (x^.circle)) xs
  
--- checks wheather or not there is an collision, if there is one it executes the Function collisionOccured
+-- checks whether or not there is an collision, if there is one it executes the Function collisionOccured
 checkCollision :: [CircleVec] -> Circle -> [CircleVec]
 checkCollision circlevecs c = map (\ circlevec -> if intersects c $ circlevec^.circle then collisionOccured circlevec c else circlevec) circlevecs
  
