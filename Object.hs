@@ -178,7 +178,7 @@ music = sound "music2.wav"
 shotSound = sound "pew.wav"
 
 playShot :: IO ()
-playShot = return ()
+playShot = play music--return ()
 
 
 playMusic :: IO ()
