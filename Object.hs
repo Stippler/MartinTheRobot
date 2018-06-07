@@ -16,6 +16,7 @@ module Object
 , addShot
 , render
 , updateBackground
+, playMusic
 ) where
 
 import Geometry
@@ -31,13 +32,12 @@ import Control.Lens hiding (set)
 ---------------
 -- Constants --
 ---------------
-shotRadius = 5
-shotSpeed = Vec 0 (-5)
+shotRadius = 25
+shotSpeed = Vec 0 (-5) 
+martinRadius = 15 
 
 dropAcc=0.1
-
-martinRadius = 15
-
+ 
 bgSpeed=3
 
 ------------
@@ -165,3 +165,13 @@ resetScaleDC dc = do
 
 toPoint :: Circle -> Point
 toPoint c = Point (round $ (c^.x- (c^.r)) / (c^.r*2/64)) (round $ (c^.y - (c^.r)) / (c^.r*2/64))
+
+-----------
+-- sound --
+-----------
+
+music = sound "music2.wav"
+
+playMusic :: IO ()
+playMusic = playWait music
+
