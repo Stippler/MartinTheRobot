@@ -15,6 +15,7 @@ module Object
 , updateMartin
 , addShot
 , render
+, updateBackground
 ) where
 
 import Geometry
@@ -32,7 +33,16 @@ import Control.Lens hiding (set)
 ---------------
 shotRadius = 50
 shotSpeed = Vec 0 (-5)
+<<<<<<< HEAD
 martinRadius = 150
+=======
+
+dropAcc=0.1
+
+martinRadius = 15
+>>>>>>> bbca9416232b03424d2d569216a70b75a51fd687
+
+bgSpeed=3
 
 ------------
 -- Martin --
@@ -81,13 +91,19 @@ initialDrops = [--CircleVec (Circle 10 20 64) (Vec 0 0),
 ---------------------
 
 updateDropShotPair :: (Shots, Drops) -> (Shots, Drops)
-updateDropShotPair (shots, drops) = reboundShotDropPair (map move shots, map (moveAcc 0.005) drops) 
+updateDropShotPair (shots, drops) = reboundShotDropPair (map move shots, map (moveAcc dropAcc) drops) 
 
 -- removes shots which intersect with a drop and rebounds the drops
 reboundShotDropPair :: (Shots, Drops) -> (Shots, Drops)
 reboundShotDropPair (shots, drops) =  (filter (not . ( (||) <$> (intersectsList drops) <*> (\ c -> c^.y < (- c^.r))._circle )) shots, iterates drops shots)
 
 
+----------------
+-- background --
+----------------
+
+updateBackground :: (Int, Int) -> (Int, Int)
+updateBackground (pos, bgCount) = if pos<round Geometry.height then (pos+bgSpeed,bgCount) else (0, bgCount+1)
 
 ------------
 -- render --
@@ -98,9 +114,11 @@ reboundShotDropPair (shots, drops) =  (filter (not . ( (||) <$> (intersectsList 
 dropImage = bitmap $ "m2r2.png"
 shotImage = bitmap $ "m2r2.png"
 martinImage = bitmap $ "m2r2.png"
+bgImage = bitmap $ "test.png"
 
-render :: Martin -> (Shots, Drops) -> DC a -> Rect -> IO ()
-render martin (shots, drops) dc viewArea = do
+render :: Martin -> (Shots, Drops) -> (Int,Int) -> DC a -> Rect -> IO ()
+render martin (shots, drops) bgPos dc viewArea = do
+  renderBackground dc bgPos
   scaleDC dc martin
   renderMartin dc martin
   resetScaleDC dc
@@ -111,6 +129,14 @@ render martin (shots, drops) dc viewArea = do
 renderCircle :: DC a -> Geometry.Circle -> IO ()
 renderCircle dc c = do
   Graphics.UI.WX.circle dc (point (round $ c^.x) (round $ c^.y)) (round $ c^.r) []
+
+renderBackground :: DC a -> (Int,Int) -> IO ()
+renderBackground dc pos = do 
+  drawBitmap dc bgImage (Point 0 $ fst pos) True []
+  drawBitmap dc bgImage (Point 0 $ fst pos - round Geometry.height) True []
+  --drawBitmap dc bgImage (Point 0 $ mod pos ((*2).round Geometry.height)) True []
+  --drawBitmap dc bgImage (Point 0 $ mod (pos - round Geometry.height) ((*2).round Geometry.height) ) True []
+  return ()
 
 renderShot :: DC a -> Shot -> IO ()
 renderShot dc shot = do
