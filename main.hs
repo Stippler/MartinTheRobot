@@ -8,6 +8,7 @@ import Reactive.Banana.WX hiding (compile)
 import Object
 import Data.Function hiding (on)
 import Control.Lens hiding (set)
+import Graphics.UI.WXCore
 
 width = 800
 height = 600
@@ -15,8 +16,11 @@ height = 600
 main :: IO ()
 main = start $ do 
   f <- frame [text:="Martin der Roboter"]
+  --set f [layout := minsize (sz 800 600)]
   p <- panel f [ ]
-  -- set f [ layout := minsize (sz width height) $ widget p ]
+  set f [ layout := minsize (sz width height) $ widget p ]
+  frameCenter f
+
   t <- timer f [ interval := 10 ]
   t2 <- timer f [ interval := 300 ]
   
@@ -46,10 +50,11 @@ main = start $ do
         (bShooting :: Behavior Bool)
             <- stepper False $ (filterJust $ justPressed <$> emouse)
               
-
+        (bBackground :: Behavior (Int,Int))
+            <- accumB (0,0) $ updateBackground <$ etick
         
-        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShotsDrops ) <@ etick
-      
+        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShotsDrops <*> bBackground) <@ etick
+        
         sink  p [on paint :== bpaint]
         reactimate $ repaint p <$ etick
         

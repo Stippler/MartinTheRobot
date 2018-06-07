@@ -16,6 +16,8 @@ module Geometry
  , moveAcc 
  , intersectsList
  , iterates
+ , width
+ , height
 ) where
 
 import Control.Lens
@@ -110,7 +112,7 @@ angle v1 v2 = acos ( (dot v1 v2) / (norm v1 * norm v2))
 -- changes the direction of a vector by an angle
 changeDir :: Vec -> Float -> Vec
 changeDir (Vec x y) alpha = Vec u v
-        where u = x * cos(alpha) +  y * sin(alpha)
+        where u =   x  * cos(alpha) +  y * sin(alpha)
               v = (-x) * sin(alpha) +  y * cos(alpha)
 
 ---------------
@@ -122,6 +124,7 @@ intersects :: Circle -> Circle -> Bool
 intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 
 -- iterates over the list of CircleVecs (second parameter) and passes one element of the second parameter and the first parameter to checkCollision
+-- TODO add function: (CircleVec -> Circle -> CircleVec) -> 
 iterates :: [CircleVec] -> [CircleVec] -> [CircleVec]
 iterates drops [] = drops
 iterates drops (x:xs) = iterates (checkCollision drops (x^.circle)) xs
