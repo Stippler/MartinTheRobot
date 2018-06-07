@@ -15,6 +15,7 @@ height = 600
 
 main :: IO ()
 main = start $ do 
+  playMusic
   f <- frame [text:="Martin der Roboter"]
   --set f [layout := minsize (sz 800 600)]
   p <- panel f [ ]
@@ -23,6 +24,8 @@ main = start $ do
 
   t <- timer f [ interval := 10 ]
   t2 <- timer f [ interval := 300 ]
+    
+  
   
   let networkDescription :: MomentIO ()
       networkDescription = mdo
