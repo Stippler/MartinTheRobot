@@ -17,13 +17,12 @@ module Object
 , render
 , updateBackground
 , playMusic
+, addDrop
 ) where
 
 import Geometry
 import Graphics.UI.WX
 import Graphics.UI.WXCore
-
---import Paths (getDataFile)
 import Data.Function
 import Control.Lens hiding (set)
 
@@ -35,10 +34,9 @@ import Control.Lens hiding (set)
 shotRadius = 25
 shotSpeed = Vec 0 (-5) 
 martinRadius = 15 
-
 dropAcc=0.1
- 
 bgSpeed=3
+dropRadius=100
 
 ------------
 -- Martin --
@@ -82,6 +80,12 @@ initialDrops = [--CircleVec (Circle 10 20 64) (Vec 0 0),
                 --CircleVec (Circle 110 (-20) 64) (Vec 0 0),
                 CircleVec (Circle 160 (-40) 64) (Vec 0 0)]
 
+addDrop :: Float -> (Shots, Drops) -> (Shots, Drops) 
+addDrop random (shots, drops) = (shots, generateDrop random : drops)
+
+generateDrop :: Float -> CircleVec
+generateDrop random = CircleVec (Circle (random*Geometry.width) (-dropRadius) $ dropRadius*random) (Vec 0 0) 
+
 ---------------------
 -- Drops and Shots --
 ---------------------
@@ -107,20 +111,21 @@ updateBackground (pos, bgCount) = if pos<round Geometry.height then (pos+bgSpeed
 
 -- TODO scaling of the image: https://stackoverflow.com/questions/7270956/draw-a-scaled-bitmap-using-wxhaskell
 
+dropImage, shotImage, martinImage, bgImage :: Bitmap ()
 dropImage = bitmap $ "m2r2.png"
 shotImage = bitmap $ "m2r2.png"
 martinImage = bitmap $ "m2r2.png"
 bgImage = bitmap $ "test.png"
 
-render :: Martin -> (Shots, Drops) -> (Int,Int) -> DC a -> Rect -> IO ()
-render martin (shots, drops) bgPos dc viewArea = do
+render :: Martin -> (Shots, Drops) -> (Int,Int) -> Bool -> DC a -> Rect -> IO ()
+render martin (shots, drops) bgPos shooting dc viewArea = do
   renderBackground dc bgPos
   scaleDC dc martin
   renderMartin dc martin
   resetScaleDC dc
   mapM ((renderShot dc)) shots 
   mapM ((renderDrop dc)) drops
-  return ()
+  if shooting then playShot else return ()
 
 renderCircle :: DC a -> Geometry.Circle -> IO ()
 renderCircle dc c = do
@@ -130,8 +135,6 @@ renderBackground :: DC a -> (Int,Int) -> IO ()
 renderBackground dc pos = do 
   drawBitmap dc bgImage (Point 0 $ fst pos) True []
   drawBitmap dc bgImage (Point 0 $ fst pos - round Geometry.height) True []
-  --drawBitmap dc bgImage (Point 0 $ mod pos ((*2).round Geometry.height)) True []
-  --drawBitmap dc bgImage (Point 0 $ mod (pos - round Geometry.height) ((*2).round Geometry.height) ) True []
   return ()
 
 renderShot :: DC a -> Shot -> IO ()
@@ -170,8 +173,14 @@ toPoint c = Point (round $ (c^.x- (c^.r)) / (c^.r*2/64)) (round $ (c^.y - (c^.r)
 -- sound --
 -----------
 
+music :: Sound ()
 music = sound "music2.wav"
+shotSound = sound "pew.wav"
+
+playShot :: IO ()
+playShot = return ()
+
 
 playMusic :: IO ()
-playMusic = playWait music
+playMusic = play music
 
