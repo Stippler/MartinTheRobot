@@ -17,6 +17,7 @@ module Object
 , render
 , updateBackground
 , playMusic
+, collisionOccured
 ) where
 
 import Geometry
@@ -86,12 +87,12 @@ initialDrops = [--CircleVec (Circle 10 20 64) (Vec 0 0),
 -- Drops and Shots --
 ---------------------
 
-updateDropShotPair :: (Shots, Drops) -> (Shots, Drops)
-updateDropShotPair (shots, drops) = reboundShotDropPair (map move shots, map (moveAcc dropAcc) drops) 
+updateDropShotPair :: (CircleVec -> Circle -> CircleVec) -> (Shots, Drops) -> (Shots, Drops)
+updateDropShotPair func (shots, drops) = reboundShotDropPair (map move shots, map (moveAcc dropAcc) drops) func
 
 -- removes shots which intersect with a drop and rebounds the drops
-reboundShotDropPair :: (Shots, Drops) -> (Shots, Drops)
-reboundShotDropPair (shots, drops) =  (filter (not . ( (||) <$> (intersectsList drops) <*> (\ c -> c^.y < (- c^.r))._circle )) shots, iterates drops shots)
+reboundShotDropPair :: (Shots, Drops) -> (CircleVec -> Circle -> CircleVec) -> (Shots, Drops)
+reboundShotDropPair (shots, drops) func =  (filter (not . ( (||) <$> (intersectsList drops) <*> (\ c -> c^.y < (- c^.r))._circle )) shots, iterates drops shots func)
 
 
 ----------------
@@ -175,3 +176,9 @@ music = sound "music2.wav"
 playMusic :: IO ()
 playMusic = playWait music
 
+-------------
+-- testing --
+-------------
+collisionOccured :: Shot -> Martin -> Shot
+collisionOccured cv c = cv & Geometry.vec %~ (addV $ (normed v) `scalV` 3)
+            where v = distVec (cv^.Geometry.circle) c
