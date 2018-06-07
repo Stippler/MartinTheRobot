@@ -16,7 +16,7 @@ height = 600
 
 main :: IO ()
 main = start $ do 
-  playMusic
+  --playMusic
   f <- frame [text:="Martin der Roboter"]
   --set f [layout := minsize (sz 800 600)]
   p <- panel f [ ]
@@ -55,6 +55,10 @@ main = start $ do
                    addDrop <$> brandom <@ etick2
                  , addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
                  , updateDropShotPair <$ etick  
+{-=======
+                 [ addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
+                 , (updateDropShotPair collisionOccured) <$ etick  -- function :: CircleVec -> Circle -> CircleVec 
+>>>>>>> 4cc63f275ea798c64b4f3970ca315ce123998101-}
                  ]
         
         (bShooting :: Behavior Bool)
@@ -86,3 +90,7 @@ justMove (MouseLeftDrag pt _) = Just pt
 justMove (MouseRightDrag pt _) = Just pt
 justMove _                  = Nothing
 
+-- For Testing
+-- collisionOccured :: Shot -> Martin -> Shot
+-- collisionOccured cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
+--            where v = distVec (cv^.circle) c

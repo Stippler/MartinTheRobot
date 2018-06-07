@@ -18,6 +18,10 @@ module Geometry
  , iterates
  , width
  , height
+ , normed -- for exporting collisionOccured
+ , addV
+ , scalV
+ , distVec
 ) where
 
 import Control.Lens
@@ -144,14 +148,17 @@ intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 
 -- iterates over the list of CircleVecs (second parameter) and passes one element of the second parameter and the first parameter to checkCollision
 -- TODO add function: (CircleVec -> Circle -> CircleVec) -> 
-iterates :: [CircleVec] -> [CircleVec] -> [CircleVec]
-iterates drops [] = drops
-iterates drops (x:xs) = iterates (checkCollision drops (x^.circle)) xs
+iterates :: [CircleVec] -> [CircleVec] -> (CircleVec -> Circle -> CircleVec)-> [CircleVec]
+iterates drops [] _ = drops
+iterates drops (x:xs) func = iterates (checkCollision drops (x^.circle) func) xs func
  
 -- checks whether or not there is an collision, if there is one it executes the Function collisionOccured
-checkCollision :: [CircleVec] -> Circle -> [CircleVec]
-checkCollision circlevecs c = map (\ circlevec -> if intersects c $ circlevec^.circle then collisionOccured circlevec c else circlevec) circlevecs
- 
+checkCollision :: [CircleVec] -> Circle -> (CircleVec -> Circle -> CircleVec) -> [CircleVec] -- add function f :: CircleVec -> Circle -> CircleVec
+checkCollision circlevecs c func = map (\ circlevec -> if intersects c $ circlevec^.circle then func circlevec c else circlevec) circlevecs
+ -- original function: 
+ -- checkCollision circlevecs c = map (\ circlevec -> if intersects c $ circlevec^.circle then collisionOccured circlevec c else circlevec) circlevecs
+
+-- THIS WILL BE REMOVED
 -- changes the first parameter accordingly
 collisionOccured :: CircleVec -> Circle -> CircleVec
 collisionOccured cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
