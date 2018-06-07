@@ -31,17 +31,12 @@ import Control.Lens hiding (set)
 ---------------
 -- Constants --
 ---------------
-shotRadius = 50
-shotSpeed = Vec 0 (-5)
-<<<<<<< HEAD
-martinRadius = 150
-=======
+shotRadius = 25
+shotSpeed = Vec 0 (-5) 
+martinRadius = 15 
 
 dropAcc=0.1
-
-martinRadius = 15
->>>>>>> bbca9416232b03424d2d569216a70b75a51fd687
-
+ 
 bgSpeed=3
 
 ------------
