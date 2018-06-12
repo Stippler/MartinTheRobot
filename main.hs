@@ -25,7 +25,7 @@ main = start $ do
 
   t <- timer f [ interval := 10 ]
   t2 <- timer f [ interval := 300 ]
-  t3 <- timer f [ interval := 300 ]
+  t3 <- timer f [ interval := 10000 ]
     
   
   
@@ -52,13 +52,9 @@ main = start $ do
         (bShotsDrops :: Behavior (Shots,Drops))
             <- accumB ([], initialDrops) $ unions
                  [ 
-                   addDrop <$> brandom <@ etick2
+                   addDrop <$> brandom <@ etick3
                  , addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
-                 , updateDropShotPair <$ etick  
-{-=======
-                 [ addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
-                 , (updateDropShotPair collisionOccured) <$ etick  -- function :: CircleVec -> Circle -> CircleVec 
->>>>>>> 4cc63f275ea798c64b4f3970ca315ce123998101-}
+                 , updateDropShotPair <$ etick 
                  ]
         
         (bShooting :: Behavior Bool)
