@@ -37,7 +37,7 @@ shotSpeed = Vec 0 (-5)
 martinRadius = 15 
 dropAcc=0.1
 bgSpeed=3
-dropRadius=100
+dropRadius=50
 
 ------------
 -- Martin --
@@ -104,7 +104,7 @@ reboundShotDropPair (shots, drops) func =  (filter (not . ( (||) <$> (intersects
 ----------------
 
 updateBackground :: (Int, Int) -> (Int, Int)
-updateBackground (pos, bgCount) = if pos<round Geometry.height then (pos+bgSpeed,bgCount) else (0, bgCount+1)
+updateBackground (pos, bgCount) = if pos<round (Geometry.height*2) then (pos+bgSpeed,bgCount) else (0, bgCount+1)
 
 ------------
 -- render --
@@ -112,11 +112,12 @@ updateBackground (pos, bgCount) = if pos<round Geometry.height then (pos+bgSpeed
 
 -- TODO scaling of the image: https://stackoverflow.com/questions/7270956/draw-a-scaled-bitmap-using-wxhaskell
 
+-- background changed: kathi june 13th
 dropImage, shotImage, martinImage, bgImage :: Bitmap ()
-dropImage = bitmap $ "m2r2.png"
+dropImage = bitmap $ "drop.png"
 shotImage = bitmap $ "m2r2.png"
-martinImage = bitmap $ "m2r2.png"
-bgImage = bitmap $ "test.png"
+martinImage = bitmap $ "m2r21.png"
+bgImage = bitmap $ "background3.png"
 
 render :: Martin -> (Shots, Drops) -> (Int,Int) -> Bool -> DC a -> Rect -> IO ()
 render martin (shots, drops) bgPos shooting dc viewArea = do
@@ -135,7 +136,7 @@ renderCircle dc c = do
 renderBackground :: DC a -> (Int,Int) -> IO ()
 renderBackground dc pos = do 
   drawBitmap dc bgImage (Point 0 $ fst pos) True []
-  drawBitmap dc bgImage (Point 0 $ fst pos - round Geometry.height) True []
+  drawBitmap dc bgImage (Point 0 $ fst pos - round Geometry.height*2) True []
   return ()
 
 renderShot :: DC a -> Shot -> IO ()

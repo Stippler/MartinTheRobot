@@ -17,15 +17,14 @@ height = 600
 main :: IO ()
 main = start $ do 
   --playMusic
-  f <- frame [text:="Martin der Roboter"]
-  --set f [layout := minsize (sz 800 600)]
+  f <- frame [text:="Martin der Roboter"] 
   p <- panel f [ ]
   set f [ layout := minsize (sz width height) $ widget p ]
   frameCenter f
 
-  t <- timer f [ interval := 10 ]
-  t2 <- timer f [ interval := 300 ]
-  t3 <- timer f [ interval := 300 ]
+  t <- timer f [ interval := 10 ]      -- update
+  t2 <- timer f [ interval := 5000 ]   -- shooting
+  t3 <- timer f [ interval := 900 ]    -- unused
     
   
   
@@ -34,7 +33,9 @@ main = start $ do
       
         etick <- event0 t command   -- timer for updates
         etick2 <- event0 t2 command -- timer for shooting
-        etick3 <- event0 t3 command -- timer for raindrops
+        
+        
+        etick3 <- event0 t3 command -- unused,timer for raindrops
         ekey <- event1 p keyboard   -- keyboard events
         emouse <- event1 p mouse    -- mouse events
 
@@ -54,11 +55,7 @@ main = start $ do
                  [ 
                    addDrop <$> brandom <@ etick2
                  , addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
-                 , updateDropShotPair <$ etick  
-{-=======
-                 [ addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
-                 , (updateDropShotPair collisionOccured) <$ etick  -- function :: CircleVec -> Circle -> CircleVec 
->>>>>>> 4cc63f275ea798c64b4f3970ca315ce123998101-}
+                 , updateDropShotPair <$ etick   
                  ]
         
         (bShooting :: Behavior Bool)
