@@ -23,8 +23,8 @@ main = start $ do
   frameCenter f
 
   t <- timer f [ interval := 10 ]      -- update
-  t2 <- timer f [ interval := 5000 ]   -- shooting
-  t3 <- timer f [ interval := 900 ]    -- raindrops
+  t2 <- timer f [ interval := 300 ]   -- shooting
+  t3 <- timer f [ interval := 5000 ]    -- raindrops
   
   let networkDescription :: MomentIO ()
       networkDescription = mdo

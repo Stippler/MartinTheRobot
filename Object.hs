@@ -127,7 +127,7 @@ render martin (shots, drops) bgPos shooting dc viewArea = do
   resetScaleDC dc
   mapM ((renderShot dc)) shots 
   mapM ((renderDrop dc)) drops
-  if shooting then playShot else return ()
+  return ()
 
 renderCircle :: DC a -> Geometry.Circle -> IO ()
 renderCircle dc c = do
