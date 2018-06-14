@@ -23,7 +23,7 @@ main = start $ do
   frameCenter f
 
   t <- timer f [ interval := 10 ]      -- update
-  t2 <- timer f [ interval := 5000 ]   -- shooting
+  t2 <- timer f [ interval := 100 ]   -- shooting
   t3 <- timer f [ interval := 900 ]    -- unused
     
   
