@@ -23,10 +23,15 @@ main = start $ do
   frameCenter f
 
   t <- timer f [ interval := 10 ]      -- update
+<<<<<<< HEAD
   t2 <- timer f [ interval := 100 ]   -- shooting
   t3 <- timer f [ interval := 900 ]    -- unused
     
   
+=======
+  t2 <- timer f [ interval := 300 ]   -- shooting
+  t3 <- timer f [ interval := 5000 ]    -- raindrops
+>>>>>>> 7d13de74901c87d8bc1862def0557286629733d1
   
   let networkDescription :: MomentIO ()
       networkDescription = mdo
@@ -35,7 +40,7 @@ main = start $ do
         etick2 <- event0 t2 command -- timer for shooting
         
         
-        etick3 <- event0 t3 command -- unused,timer for raindrops
+        etick3 <- event0 t3 command -- timer for creating new raindrops
         ekey <- event1 p keyboard   -- keyboard events
         emouse <- event1 p mouse    -- mouse events
 
@@ -53,9 +58,9 @@ main = start $ do
         (bShotsDrops :: Behavior (Shots,Drops))
             <- accumB ([], initialDrops) $ unions
                  [ 
-                   addDrop <$> brandom <@ etick2
+                   addDrop <$> brandom <@ etick3
                  , addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
-                 , updateDropShotPair <$ etick   
+                 , updateDropShotPair <$ etick 
                  ]
         
         (bShooting :: Behavior Bool)

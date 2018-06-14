@@ -127,7 +127,7 @@ render martin (shots, drops) bgPos shooting dc viewArea = do
   resetScaleDC dc
   mapM ((renderShot dc)) shots 
   mapM ((renderDrop dc)) drops
-  if shooting then playShot else return ()
+  return ()
 
 renderCircle :: DC a -> Geometry.Circle -> IO ()
 renderCircle dc c = do
@@ -190,5 +190,5 @@ playMusic = play music
 -- testing --
 -------------
 collisionOccured :: Shot -> Martin -> Shot
-collisionOccured cv c = cv & Geometry.vec %~ (addV $ (normed v) `scalV` 100)
+collisionOccured cv c = cv & Geometry.vec %~ (addV $ (normed v) `scalV` 5)
             where v = distVec (cv^.Geometry.circle) c

@@ -155,8 +155,6 @@ iterates drops (x:xs) func = iterates (checkCollision drops (x^.circle) func) xs
 -- checks whether or not there is an collision, if there is one it executes the Function collisionOccured
 checkCollision :: [CircleVec] -> Circle -> (CircleVec -> Circle -> CircleVec) -> [CircleVec] -- add function f :: CircleVec -> Circle -> CircleVec
 checkCollision circlevecs c func = map (\ circlevec -> if intersects c $ circlevec^.circle then func circlevec c else circlevec) circlevecs
- -- original function: 
- -- checkCollision circlevecs c = map (\ circlevec -> if intersects c $ circlevec^.circle then collisionOccured circlevec c else circlevec) circlevecs
 
 -- THIS WILL BE REMOVED
 -- changes the first parameter accordingly
