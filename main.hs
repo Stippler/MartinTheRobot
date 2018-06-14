@@ -17,24 +17,23 @@ height = 600
 main :: IO ()
 main = start $ do 
   --playMusic
-  f <- frame [text:="Martin der Roboter"]
-  --set f [layout := minsize (sz 800 600)]
+  f <- frame [text:="Martin der Roboter"] 
   p <- panel f [ ]
   set f [ layout := minsize (sz width height) $ widget p ]
   frameCenter f
 
-  t <- timer f [ interval := 10 ]
-  t2 <- timer f [ interval := 300 ]
-  t3 <- timer f [ interval := 10000 ]
-    
-  
+  t <- timer f [ interval := 10 ]      -- update
+  t2 <- timer f [ interval := 5000 ]   -- shooting
+  t3 <- timer f [ interval := 900 ]    -- raindrops
   
   let networkDescription :: MomentIO ()
       networkDescription = mdo
       
         etick <- event0 t command   -- timer for updates
         etick2 <- event0 t2 command -- timer for shooting
-        etick3 <- event0 t3 command -- timer for raindrops
+        
+        
+        etick3 <- event0 t3 command -- timer for creating new raindrops
         ekey <- event1 p keyboard   -- keyboard events
         emouse <- event1 p mouse    -- mouse events
 
