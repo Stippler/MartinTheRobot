@@ -31,9 +31,8 @@ main = start $ do
       
         etick <- event0 t command   -- timer for updates
         etick2 <- event0 t2 command -- timer for shooting
-        
-        
         etick3 <- event0 t3 command -- timer for creating new raindrops
+
         ekey <- event1 p keyboard   -- keyboard events
         emouse <- event1 p mouse    -- mouse events
 
@@ -41,20 +40,24 @@ main = start $ do
             eright = filterE ((== KeyRight) . keyKey) ekey
             eup    = filterE ((== KeyUp   ) . keyKey) ekey
             edown  = filterE ((== KeyDown ) . keyKey) ekey
-                
+        
         (bPlayerPosition :: Behavior (Martin))
             <- stepper (initialMartin) $
                  updateMartin <$> (filterJust $ justMove <$> emouse)
         
-        brandom <- fromPoll (randomRIO (0,1) :: IO Float)
         
+        
+        brandom <- fromPoll (randomRIO (0,1) :: IO Float)
+
         (bShotsDrops :: Behavior (Shots,Drops))
             <- accumB ([], initialDrops) $ unions
                  [ 
                    addDrop <$> brandom <@ etick3
-                 , addShot <$> (((\ a b -> if a then (Just b) else Nothing) <$> bShooting <*> (bPlayerPosition) <@ etick2 ))
+                 , addShot <$> (bPlayerPosition) <@ whenE bShooting etick2 
                  , updateDropShotPair <$ etick 
                  ]
+        
+        reactimate $ set t [enabled :~ not] <$ whenE (intersectsMartin <$> bShotsDrops <*> bPlayerPosition) etick
         
         (bShooting :: Behavior Bool)
             <- stepper False $ (filterJust $ justPressed <$> emouse)
@@ -64,7 +67,7 @@ main = start $ do
         
         bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShotsDrops <*> bBackground <*> bShooting) <@ etick
         
-        sink  p [on paint :== bpaint]
+        sink p [on paint :== bpaint]
         reactimate $ repaint p <$ etick
         
         return ()
@@ -84,8 +87,3 @@ justMove (MouseMotion pt _) = Just pt
 justMove (MouseLeftDrag pt _) = Just pt
 justMove (MouseRightDrag pt _) = Just pt
 justMove _                  = Nothing
-
--- For Testing
--- collisionOccured :: Shot -> Martin -> Shot
--- collisionOccured cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
---            where v = distVec (cv^.circle) c

@@ -88,8 +88,8 @@ distance² c1 c2 = dx*dx + dy * dy
        where dx = c1^.x - c2^.x
              dy = c1^.y - c2^.y
 
-intersectsList :: [CircleVec] -> CircleVec -> Bool
-intersectsList circles c1 = any ((intersects (c1^.circle)) . _circle) circles
+intersectsList :: [CircleVec] -> Circle -> Bool
+intersectsList circles c1 = any ((intersects (c1)) . _circle) circles
 
 distVec :: Circle -> Circle -> Vec
 distVec c1 c2 = Vec (c1^.x - c2^.x) (c1^.y - c2^.y)  

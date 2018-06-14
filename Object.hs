@@ -19,6 +19,7 @@ module Object
 , playMusic
 , addDrop
 , collisionOccured
+, intersectsMartin
 ) where
 
 import Geometry
@@ -58,12 +59,11 @@ updateMartin point = Circle (fromIntegral (pointX point)) (fromIntegral (pointY 
 type Shot = CircleVec
 type Shots = [Shot]
 
-addShot :: Maybe Martin -> (Shots, Drops) -> (Shots, Drops)
+addShot :: Martin -> (Shots, Drops) -> (Shots, Drops)
 addShot c (shots, drops) = (addShotToList c shots, drops)
 
-addShotToList :: Maybe Circle -> Shots -> Shots
-addShotToList Nothing s = s
-addShotToList (Just c) s = (generateShot (c^.x) (c^.y)):s
+addShotToList :: Circle -> Shots -> Shots
+addShotToList c s = (generateShot (c^.x) (c^.y)):s
 
 generateShot :: Float -> Float -> Shot
 generateShot x y = CircleVec (Circle x y shotRadius) shotSpeed
@@ -87,6 +87,14 @@ addDrop random (shots, drops) = (shots, generateDrop random : drops)
 generateDrop :: Float -> CircleVec
 generateDrop random = CircleVec (Circle (random*Geometry.width) (-dropRadius) $ dropRadius*random) (Vec 0 0) 
 
+----------------------
+-- Drops and Martin --
+----------------------
+
+intersectsMartin :: (Shots, Drops) -> Martin -> Bool
+intersectsMartin (_, drops) martin = intersectsList drops martin
+
+
 ---------------------
 -- Drops and Shots --
 ---------------------
@@ -96,7 +104,7 @@ updateDropShotPair (shots, drops) = reboundShotDropPair (map move shots, map (mo
 
 -- removes shots which intersect with a drop and rebounds the drops
 reboundShotDropPair :: (Shots, Drops) -> (CircleVec -> Circle -> CircleVec) -> (Shots, Drops)
-reboundShotDropPair (shots, drops) func =  (filter (not . ( (||) <$> (intersectsList drops) <*> (\ c -> c^.y < (- c^.r))._circle )) shots, iterates drops shots func)
+reboundShotDropPair (shots, drops) func =  (filter (not . ( (||) <$> (intersectsList drops)._circle <*> (\ c -> c^.y < (- c^.r))._circle )) shots, iterates drops shots func)
 
 
 ----------------
