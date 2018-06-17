@@ -108,27 +108,12 @@ move cv =  if yy > Geometry.height
                          yy = cv^.circle^.y
                          vv = cv^.vec 
 
-{-
-moveX :: Circle -> Float -> Float
-moveX circle moveX = if right < 0 then Geometry.width+r else (if left>Geometry.width then (-r) else cx+moveX) 
-    where r = circle^.radius
-          cx = circle^.x
-          right = cx+r+moveX -- right side of the circle after moving
-          left  = cx-r+moveX -- left side of the circle
-
-moveY :: Circle -> Float -> Circle
-moveY circle moveY = if top > Geometry.height then Circle (circle^.x) (-r) r else circle & y +~ moveY
-    where r = circle^.radius
-          y = circle^.y
-          top = circle^.y-r+moveY
-
--}
 
 -- calls move and adds an acceleration to the y vector afterwards (used for gravity)
 moveAcc :: Float -> CircleVec -> CircleVec
 moveAcc acc cv = (vec.vy +~ acc) . move $ cv
 
--- calculates the angle between two vectors
+-- calculates the angle between two veactors
 angle :: Vec -> Vec -> Float
 angle v1 v2 = acos ( (dot v1 v2) / (norm v1 * norm v2))
 
