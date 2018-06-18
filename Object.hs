@@ -122,7 +122,7 @@ updateBackground (pos, bgCount) = if pos<round (Geometry.height*2) then (pos+bgS
  
 dropImage, shotImage, martinImage, bgImage :: Bitmap ()
 dropImage = bitmap $ "drop.png"
-shotImage = bitmap $ "banana.png" --"shot.png"
+shotImage = bitmap $ "shot.png" --"shot.png"
 martinImage = bitmap $ "m2r21.png"
 bgImage = bitmap $ "background3.png"
 
