@@ -119,11 +119,10 @@ updateBackground (pos, bgCount) = if pos<round (Geometry.height*2) then (pos+bgS
 ------------
 
 -- TODO scaling of the image: https://stackoverflow.com/questions/7270956/draw-a-scaled-bitmap-using-wxhaskell
-
--- background changed: kathi june 13th
+ 
 dropImage, shotImage, martinImage, bgImage :: Bitmap ()
 dropImage = bitmap $ "drop.png"
-shotImage = bitmap $ "banana.png"
+shotImage = bitmap $ "shot.png"
 martinImage = bitmap $ "m2r21.png"
 bgImage = bitmap $ "background3.png"
 
