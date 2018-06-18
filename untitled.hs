@@ -14,18 +14,43 @@ import System.Random
 width = 800
 height = 600
 
+---------
+
 main :: IO ()
-main = start $ do 
+main = do
+  start martinGame
+
+---------
+
+martinGame :: IO ()
+martinGame = do 
   --playMusic
   f <- frame [text:="Martin der Roboter"] 
-  p <- panel f [ ]
-  set f [ layout := minsize (sz width height) $ widget p ]
   frameCenter f
 
   t <- timer f [ interval := 10 ]      -- update
   t2 <- timer f [ interval := 300 ]   -- shooting
   t3 <- timer f [ interval := 5000 ]    -- raindrops
   
+  game  <- menuPane      [ text := "&   Pause: Ctrl+Space & -  Restart: Ctrl+N & -  Quit: Ctrl+Q" ]
+  new   <- menuItem game [ text := "&New\tCtrl+N", help := "New game" ]
+  pause <- menuItem game [ text      := "&Pause\tCtrl+Space" 
+                         --, checkable := True
+                         ] 
+
+  menuLine game
+  quit  <- menuQuit game [help := "Quit the game"]
+
+  set new   [on command := do {close f; martinGame; propagateEvent}]
+  set pause [on command := set t [enabled :~ not] ] 
+  set quit  [on command := close f]
+
+  set f [menuBar := [game]]
+  
+  p <- panel f [ ]
+  set f [ layout := minsize (sz width height) $ widget p ]
+  
+  -----------------
   let networkDescription :: MomentIO ()
       networkDescription = mdo
       
@@ -41,29 +66,23 @@ main = start $ do
             eup    = filterE ((== KeyUp   ) . keyKey) ekey
             edown  = filterE ((== KeyDown ) . keyKey) ekey
         
-        (bMartin :: Behavior (Martin))
+        (bPlayerPosition :: Behavior (Martin))
             <- stepper (initialMartin) $
                  updateMartin <$> (filterJust $ justMove <$> emouse)
         
-        
-        
         brandom <- fromPoll (randomRIO (0,1) :: IO Float)
-        
-        (bShots :: Behavior Shots)
-            <- accumB [] $ unions
-                 [ addShot <$> (bMartin) <@ whenE bShooting etick2
-                 , (updateShots <$> bDrops) <@ etick 
+
+        (bShotsDrops :: Behavior (Shots,Drops))
+            <- accumB ([], initialDrops) $ unions
+                 [ 
+                   addDrop <$> brandom <@ etick3
+                 , addShot <$> (bPlayerPosition) <@ whenE bShooting etick2 
+                 , updateDropShotPair <$ etick 
                  ]
         
-        (bDrops :: Behavior Drops)
-            <- accumB initialDrops $ unions
-                 [ addDrop <$> brandom <@ etick3
-                 , (updateDrops <$> bShots) <@ etick
-                 ]
+        reactimate $ set t [enabled :~ not] <$ whenE (intersectsMartin <$> bShotsDrops <*> bPlayerPosition) etick
         
         
-        
-        reactimate $ set t [enabled :~ not] <$ whenE (intersectsMartin <$> bDrops <*> bMartin) etick
         
         (bShooting :: Behavior Bool)
             <- stepper False $ (filterJust $ justPressed <$> emouse)
@@ -71,7 +90,7 @@ main = start $ do
         (bBackground :: Behavior (Int,Int))
             <- accumB (0,0) $ updateBackground <$ etick
         
-        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bMartin <*> bShots <*> bDrops <*> bBackground <*> bShooting) <@ etick
+        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bPlayerPosition <*> bShotsDrops <*> bBackground <*> bShooting) <@ etick
         
         sink p [on paint :== bpaint]
         reactimate $ repaint p <$ etick
@@ -92,4 +111,4 @@ justMove :: EventMouse -> Maybe Point
 justMove (MouseMotion pt _) = Just pt
 justMove (MouseLeftDrag pt _) = Just pt
 justMove (MouseRightDrag pt _) = Just pt
-justMove _                  = Nothing
+justMove _                  = Nothing  

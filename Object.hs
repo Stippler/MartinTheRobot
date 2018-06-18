@@ -9,9 +9,7 @@ module Object
 , Martin
 , initialMartin
 , initialDrops
-, updateDropShotPair
-, reboundShotDropPair
-, addShotToList
+, updateDrops
 , updateMartin
 , addShot
 , render
@@ -20,6 +18,7 @@ module Object
 , addDrop
 , collisionOccured
 , intersectsMartin
+, updateShots
 ) where
 
 import Geometry
@@ -52,6 +51,10 @@ initialMartin = Circle 0 0 0
 updateMartin :: Point2 Int  -> Martin
 updateMartin point = Circle (fromIntegral (pointX point)) (fromIntegral (pointY point)) martinRadius
 
+
+intersectsMartin :: Drops -> Martin -> Bool
+intersectsMartin drops martin = intersectsList drops martin
+
 ----------
 -- Shot -- 
 ----------
@@ -59,14 +62,17 @@ updateMartin point = Circle (fromIntegral (pointX point)) (fromIntegral (pointY 
 type Shot = CircleVec
 type Shots = [Shot]
 
-addShot :: Martin -> (Shots, Drops) -> (Shots, Drops)
-addShot c (shots, drops) = (addShotToList c shots, drops)
-
-addShotToList :: Circle -> Shots -> Shots
-addShotToList c s = (generateShot (c^.x) (c^.y)):s
+addShot :: Circle -> Shots -> Shots
+addShot c s = (generateShot (c^.x) (c^.y)):s
 
 generateShot :: Float -> Float -> Shot
 generateShot x y = CircleVec (Circle x y shotRadius) shotSpeed
+
+updateShots ::  Drops -> Shots -> Shots
+updateShots drops shots =  filterShots (map move shots) $ drops
+
+filterShots :: Shots -> Drops -> Shots
+filterShots shots drops = filter (not . ( (||) <$> (intersectsList drops)._circle <*> (\ c -> c^.y < (- c^.r))._circle )) shots
 
 ----------
 -- Drop --
@@ -79,21 +85,20 @@ initialDrops :: Drops
 initialDrops = [--CircleVec (Circle 10 20 64) (Vec 0 0),
                 --CircleVec (Circle 60 00 64) (Vec 0 0),
                 --CircleVec (Circle 110 (-20) 64) (Vec 0 0),
-                CircleVec (Circle 160 (-40) 64) (Vec 0 0)]
+                CircleVec (Circle 160 (40) 64) (Vec 0 0)]
 
-addDrop :: Float -> (Shots, Drops) -> (Shots, Drops) 
-addDrop random (shots, drops) = (shots, generateDrop random : drops)
+addDrop :: Float -> Drops -> Drops 
+addDrop random drops = generateDrop random : drops
 
 generateDrop :: Float -> CircleVec
 generateDrop random = CircleVec (Circle (random*Geometry.width) (-dropRadius) $ dropRadius*random) (Vec 0 0) 
 
-----------------------
--- Drops and Martin --
-----------------------
+updateDrops :: Shots -> Drops -> Drops
+updateDrops shots drops = iterates (map (moveAcc dropAcc) drops) shots collisionOccured
 
-intersectsMartin :: (Shots, Drops) -> Martin -> Bool
-intersectsMartin (_, drops) martin = intersectsList drops martin
-
+collisionOccured :: Drop -> Martin -> Drop
+collisionOccured cv c = cv & Geometry.vec %~ (addV $ (normed v) `scalV` 5)
+            where v = distVec (cv^.Geometry.circle) c
 
 ---------------------
 -- Drops and Shots --
@@ -105,7 +110,6 @@ updateDropShotPair (shots, drops) = reboundShotDropPair (map move shots, map (mo
 -- removes shots which intersect with a drop and rebounds the drops
 reboundShotDropPair :: (Shots, Drops) -> (CircleVec -> Circle -> CircleVec) -> (Shots, Drops)
 reboundShotDropPair (shots, drops) func =  (filter (not . ( (||) <$> (intersectsList drops)._circle <*> (\ c -> c^.y < (- c^.r))._circle )) shots, iterates drops shots func)
-
 
 ----------------
 -- background --
@@ -122,12 +126,12 @@ updateBackground (pos, bgCount) = if pos<round (Geometry.height*2) then (pos+bgS
  
 dropImage, shotImage, martinImage, bgImage :: Bitmap ()
 dropImage = bitmap $ "drop.png"
-shotImage = bitmap $ "shot.png"
+shotImage = bitmap $ "shotSquare.png"
 martinImage = bitmap $ "m2r21.png"
 bgImage = bitmap $ "background3.png"
 
-render :: Martin -> (Shots, Drops) -> (Int,Int) -> Bool -> DC a -> Rect -> IO ()
-render martin (shots, drops) bgPos shooting dc viewArea = do
+render :: Martin -> Shots -> Drops -> (Int,Int) -> Bool -> DC a -> Rect -> IO ()
+render martin shots drops bgPos shooting dc viewArea = do
   renderBackground dc bgPos
   scaleDC dc martin
   renderMartin dc martin
@@ -174,7 +178,6 @@ resetScaleDC dc = do
   dcSetUserScale dc 1 1
   return ()
 
-
 toPoint :: Circle -> Point
 toPoint c = Point (round $ (c^.x- (c^.r)) / (c^.r*2/64)) (round $ (c^.y - (c^.r)) / (c^.r*2/64))
 
@@ -193,9 +196,3 @@ playShot = play music
 playMusic :: IO ()
 playMusic = play music
 
--------------
--- testing --
--------------
-collisionOccured :: Shot -> Martin -> Shot
-collisionOccured cv c = cv & Geometry.vec %~ (addV $ (normed v) `scalV` 5)
-            where v = distVec (cv^.Geometry.circle) c

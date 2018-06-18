@@ -127,7 +127,7 @@ changeDir (Vec x y) alpha = Vec u v
 -- collision --
 ---------------
 
--- checks if two circles overlap
+-- | checks if two circles overlap
 intersects :: Circle -> Circle -> Bool
 intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 
@@ -147,3 +147,5 @@ collisionOccured :: CircleVec -> Circle -> CircleVec
 collisionOccured cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
            where v = distVec (cv^.circle) c
  
+--merge :: [CircleVec] -> [CircleVec]
+
