@@ -123,7 +123,7 @@ updateBackground (pos, bgCount) = if pos<round (Geometry.height*2) then (pos+bgS
 -- background changed: kathi june 13th
 dropImage, shotImage, martinImage, bgImage :: Bitmap ()
 dropImage = bitmap $ "drop.png"
-shotImage = bitmap $ "shot.png"
+shotImage = bitmap $ "banana.png"
 martinImage = bitmap $ "m2r21.png"
 bgImage = bitmap $ "background3.png"
 
@@ -188,7 +188,7 @@ music = sound "music2.wav"
 shotSound = sound "pew.wav"
 
 playShot :: IO ()
-playShot = play music--return ()
+playShot = play music
 
 
 playMusic :: IO ()
