@@ -10,16 +10,13 @@ import Data.Function hiding (on)
 import Control.Lens hiding (set)
 import Graphics.UI.WXCore
 import System.Random
-
-width = 800
-height = 600
+import Geometry
 
 main :: IO ()
-main = start $ do 
-  --playMusic
+main = start $ do
   f <- frame [text:="Martin der Roboter"] 
   p <- panel f [ ]
-  set f [ layout := minsize (sz width height) $ widget p ]
+  set f [ layout := minsize (sz (round Geometry.width) (round Geometry.height)) $ widget p ]
   frameCenter f
 
   t <- timer f [ interval := 10 ]      -- update
@@ -28,6 +25,10 @@ main = start $ do
   
   let networkDescription :: MomentIO ()
       networkDescription = mdo
+        
+        (bGameRunning :: Behavior (Martin))
+            <- stepper (initialMartin) $
+                 updateMartin <$> (filterJust $ justMove <$> emouse)
       
         etick <- event0 t command   -- timer for updates
         etick2 <- event0 t2 command -- timer for shooting
@@ -36,8 +37,8 @@ main = start $ do
         ekey <- event1 p keyboard   -- keyboard events
         emouse <- event1 p mouse    -- mouse events
 
-        let eleft  = filterE ((== KeyLeft ) . keyKey) ekey
-            eright = filterE ((== KeyRight) . keyKey) ekey
+        let nTyped  = filterE ((== KeyChar 'N') . keyKey) ekey
+            onNewGame = filterE ((== KeyRight) . keyKey) ekey
             eup    = filterE ((== KeyUp   ) . keyKey) ekey
             edown  = filterE ((== KeyDown ) . keyKey) ekey
         
@@ -52,18 +53,16 @@ main = start $ do
         (bShots :: Behavior Shots)
             <- accumB [] $ unions
                  [ addShot <$> (bMartin) <@ whenE bShooting etick2
-                 , (updateShots <$> bDrops) <@ etick 
+                 , (updateShots <$> bDrops) <@ etick
+                 , (\ _ -> [] ) <$ onNewGame
                  ]
         
         (bDrops :: Behavior Drops)
             <- accumB initialDrops $ unions
                  [ addDrop <$> brandom <@ etick3
                  , (updateDrops <$> bShots) <@ etick
+                 , (\ _ -> []) <$ onNewGame
                  ]
-        
-        
-        
-        reactimate $ set t [enabled :~ not] <$ whenE (intersectsMartin <$> bDrops <*> bMartin) etick
         
         (bShooting :: Behavior Bool)
             <- stepper False $ (filterJust $ justPressed <$> emouse)
@@ -75,6 +74,16 @@ main = start $ do
         
         sink p [on paint :== bpaint]
         reactimate $ repaint p <$ etick
+        
+        reactimate $ (set t [enabled :~ not] >>
+                      set t2 [enabled :~ not] >>
+                      set t3 [enabled :~ not])
+                   <$ whenE (intersectsMartin <$> bDrops <*> bMartin) etick
+        
+        reactimate $ (set t [enabled :~ not] >>
+                      set t2 [enabled :~ not] >>
+                      set t3 [enabled :~ not])
+                   <$ onNewGame
         
         return ()
   
