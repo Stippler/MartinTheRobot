@@ -88,6 +88,8 @@ main = start $ do
                       set t2 [enabled :~ not] >>
                       set t3 [enabled :~ not])
                    <$ onNewGame
+
+        reactimate $  (Sound.play "pew.wav") <$ whenE bShooting etick2
         
         return ()
   
