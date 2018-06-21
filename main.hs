@@ -11,9 +11,13 @@ import Control.Lens hiding (set)
 import Graphics.UI.WXCore
 import System.Random
 import Geometry
+import Sound
+import Control.Parallel
+import Control.Concurrent
 
 main :: IO ()
 main = start $ do
+  forkIO (Sound.play "spielsong2.wav")
   f <- frame [text:="Martin der Roboter"] 
   p <- panel f [ ]
   set f [ layout := minsize (sz (round Geometry.width) (round Geometry.height)) $ widget p ]

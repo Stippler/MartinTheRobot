@@ -1,13 +1,17 @@
+module Sound
+(
+  play
+) where
 import Control.Monad
 import Control.Monad.Fix
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Mixer as Mix
 
-
-main = do
+play :: String -> IO ()
+play filename = do
   SDL.init [SDL.InitAudio]
   result <- openAudio audioRate audioFormat audioChannels audioBuffers
-  pew <- Mix.loadWAV "pew.wav"
+  pew <- Mix.loadWAV filename
   ch1 <- Mix.playChannel anyChannel pew 0
   fix $ \loop -> do
     SDL.delay 50
