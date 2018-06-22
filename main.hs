@@ -83,7 +83,7 @@ main = start $ do
         
         (bDrops :: Behavior Drops)
             <- accumB initialDrops $ unions
-                 [ addDrop <$> brandom <@ etick3
+                 [ addDrop <$> brandom <@ whenE (fmap (<16) $ length <$> bDrops)  etick3
                  , (updateDrops <$> bShots) <@ etick
                  , (\ _ -> []) <$ onNewGame
                  ]

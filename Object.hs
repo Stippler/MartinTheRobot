@@ -37,7 +37,8 @@ shotSpeed = Vec 0 (-5)
 martinRadius = 15 
 dropAcc=0.1
 bgSpeed=5
-dropRadius=50
+dropRadius=100
+minSizeDrop=10
 
 ------------
 -- Martin --
@@ -95,7 +96,7 @@ addDrop random drops = generateDrop random : drops
 -- | generates a new drop at a (x = random*width) just above the frame
 -- TODO maybe 2 randoms
 generateDrop :: Float -> CircleVec
-generateDrop random = CircleVec (Circle (random*Geometry.width) (-dropRadius) $ dropRadius*random) (Vec 0 0) 
+generateDrop random = CircleVec (Circle (random*Geometry.width) (-dropRadius) $ dropRadius*random+minSizeDrop) (Vec 0 0) 
 
 -- | moves all drops and changes their direction, if they intersect with any shot in shots
 updateDrops :: Shots -> Drops -> Drops
