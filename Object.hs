@@ -14,11 +14,11 @@ module Object
 , addShot
 , render
 , updateBackground
-, playMusic
 , addDrop
 , collisionOccured
 , intersectsMartin
 , updateShots
+, intersectionShotDrop
 ) where
 
 import Geometry
@@ -26,7 +26,7 @@ import Graphics.UI.WX
 import Graphics.UI.WXCore
 import Data.Function
 import Control.Lens hiding (set)
-
+import Control.Monad
 
 
 ---------------
@@ -130,14 +130,17 @@ shotImage = bitmap $ "shotSquare.png"
 martinImage = bitmap $ "m2r21.png"
 bgImage = bitmap $ "background3.png"
 
-render :: Martin -> Shots -> Drops -> (Int,Int) -> Bool -> DC a -> Rect -> IO ()
-render martin shots drops bgPos shooting dc viewArea = do
+render :: Martin -> Shots -> Drops -> (Int,Int) -> Int ->  DC a -> Rect -> IO ()
+render martin shots drops bgPos score dc viewArea = do
   renderBackground dc bgPos
   scaleDC dc martin
   renderMartin dc martin
   resetScaleDC dc
   mapM ((renderShot dc)) shots 
   mapM ((renderDrop dc)) drops
+  --drawText :: DC a -> String -> Point -> [Prop (DC a)] -> IO ()
+  set dc [textColor := white]
+  drawText dc (show score) (Point 650 50) []
   return ()
 
 renderCircle :: DC a -> Geometry.Circle -> IO ()
@@ -185,14 +188,16 @@ toPoint c = Point (round $ (c^.x- (c^.r)) / (c^.r*2/64)) (round $ (c^.y - (c^.r)
 -- sound --
 -----------
 
-music :: Sound ()
-music = sound "music2.wav"
-shotSound = sound "pew.wav"
-
-playShot :: IO ()
-playShot = play music
+intersectionShotDrop :: Shots -> Drops -> Bool
+intersectionShotDrop shots drops = any (\ shot -> any (\ drop -> intersects (drop ^. Geometry.circle) (shot ^. Geometry.circle)) drops) shots
 
 
-playMusic :: IO ()
-playMusic = play music
+
+
+
+
+
+
+
+
 
