@@ -12,13 +12,13 @@ module Geometry
  , Vec(..)
  , vx
  , vy
- , move
- , moveAcc 
- , intersectsList
- , iterates
+ , move -- for Object.updateShots
+ , moveAcc -- for Object.updateDrops 
+ , intersectsList -- needed in Object, i. e. filterShots
+ , iterates -- Object.collisionoccured
  , width
  , height
- , normed -- for exporting collisionOccured
+ , normed 
  , addV
  , scalV
  , distVec
@@ -75,7 +75,7 @@ normed :: Vec -> Vec
 normed v = scalV v (1/length)
     where length = norm v
 
--- returns normal vector of v
+-- | returns normal vector of v
 normalVec :: Vec -> Vec
 normalVec v = Vec ((-1)*v^.vy) (v^.vx)
 
@@ -101,7 +101,7 @@ distVec c1 c2 = Vec (c1^.x - c2^.x) (c1^.y - c2^.y)
 -- movement --
 --------------
 
--- moves a CircleVec (c, v) by adding vector v to the center of the circle c
+-- | moves a CircleVec (c, v) by adding vector v to the center of the circle c; if c leaves the frame on the left or right side, it enters on the other one; if it leaves the frame on the bottom, it enters on the top again
 move :: CircleVec -> CircleVec
 move cv =  if yy > Geometry.height 
                then cv & circle.x .~ (mod' (vv^.vx + xx + 373) width) & circle.y .~ (-1)*cv^.circle^.r & vec .~ (Vec 0 0)
@@ -111,15 +111,15 @@ move cv =  if yy > Geometry.height
                          vv = cv^.vec 
 
 
--- calls move and adds an acceleration to the y vector afterwards (used for gravity)
+-- | calls move and adds an acceleration to the y vector afterwards (used for gravity)
 moveAcc :: Float -> CircleVec -> CircleVec
 moveAcc acc cv = (vec.vy +~ acc) . move $ cv
 
--- calculates the angle between two veactors
+-- | calculates the angle between two vectors
 angle :: Vec -> Vec -> Float
 angle v1 v2 = acos ( (dot v1 v2) / (norm v1 * norm v2))
 
--- changes the direction of a vector by an angle
+-- | changes the direction of a vector by an angle
 changeDir :: Vec -> Float -> Vec
 changeDir (Vec x y) alpha = Vec u v
         where u =   x  * cos(alpha) +  y * sin(alpha)
@@ -133,21 +133,19 @@ changeDir (Vec x y) alpha = Vec u v
 intersects :: Circle -> Circle -> Bool
 intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 
--- iterates over the list of CircleVecs (second parameter) and passes one element of the second parameter and the first parameter to checkCollision
--- TODO add function: (CircleVec -> Circle -> CircleVec) -> 
+-- | iterates over the 2nd list of CircleVecs checks collisions with the first list
+-- TODO name of parameters?
 iterates :: [CircleVec] -> [CircleVec] -> (CircleVec -> Circle -> CircleVec)-> [CircleVec]
 iterates drops [] _ = drops
 iterates drops (x:xs) func = iterates (checkCollision drops (x^.circle) func) xs func
  
--- checks whether or not there is an collision, if there is one it executes the Function collisionOccured
+-- | checks whether or not there is an collision, if there is one it executes the function collisionOccured
 checkCollision :: [CircleVec] -> Circle -> (CircleVec -> Circle -> CircleVec) -> [CircleVec] -- add function f :: CircleVec -> Circle -> CircleVec
 checkCollision circlevecs c func = map (\ circlevec -> if intersects c $ circlevec^.circle then func circlevec c else circlevec) circlevecs
 
 -- THIS WILL BE REMOVED
--- changes the first parameter accordingly
-collisionOccured :: CircleVec -> Circle -> CircleVec
-collisionOccured cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
-           where v = distVec (cv^.circle) c
+-- | changes the first parameter accordingly
+--collisionOccured :: CircleVec -> Circle -> CircleVec
+--collisionOccured cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
+--           where v = distVec (cv^.circle) c
  
---merge :: [CircleVec] -> [CircleVec]
-

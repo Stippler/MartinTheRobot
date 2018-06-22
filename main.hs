@@ -19,7 +19,7 @@ import Graphics.UI.SDL as SDL hiding (Event, KeyUp, KeyDown, MouseMotion)
 import Graphics.UI.SDL.Mixer as Mix
 import Foreign.ForeignPtr
 
-main :: IO ()
+main :: IO () 
 main = start $ do
   f <- frame [text:="Martin der Roboter"] 
   p <- panel f [ ]
