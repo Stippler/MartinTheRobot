@@ -22,6 +22,7 @@ module Geometry
  , addV
  , scalV
  , distVec
+ , intersects
 ) where
 
 import Control.Lens

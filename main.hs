@@ -12,9 +12,7 @@ import Graphics.UI.WXCore
 import System.Random
 import Geometry
 import Sound
-import Control.Parallel
 import Control.Concurrent
-
 import Control.Monad
 import Control.Monad.Fix
 import Graphics.UI.SDL as SDL hiding (Event, KeyUp, KeyDown, MouseMotion)
@@ -36,8 +34,11 @@ main = start $ do
   SDL.init [SDL.InitAudio]
   result <- openAudio 22050 Mix.AudioS16LSB 2 4096
   music <- Mix.loadWAV "spielsong2.wav"
-  pew <- Mix.loadWAV "pew.wav"
-  Mix.playChannel (-1) music 0
+  pew <- Mix.loadWAV "pew2.wav"
+  explosion <- Mix.loadWAV "shot2.wav"
+  bgMusic <- Mix.playChannel (-1) music 0
+  shotSound <- Mix.playChannel (-1) pew (-1)
+  Mix.pause shotSound
   
   let networkDescription :: MomentIO ()
       networkDescription = mdo
@@ -50,7 +51,7 @@ main = start $ do
         etick2 <- event0 t2 command -- timer for shooting
         etick3 <- event0 t3 command -- timer for creating new raindrops
         
-        reactimate $ (touchForeignPtr music >> touchForeignPtr pew) <$ etick2
+        reactimate $ (touchForeignPtr music >> touchForeignPtr pew >> touchForeignPtr explosion) <$ etick2
         
         ekey <- event1 p keyboard   -- keyboard events
         emouse <- event1 p mouse    -- mouse events
@@ -65,8 +66,13 @@ main = start $ do
                  updateMartin <$> (filterJust $ justMove <$> emouse)
         
         
-        
         brandom <- fromPoll (randomRIO (0,1) :: IO Float)
+        
+        reactimate $ (\ shooting -> 
+                          if shooting then
+                            resume shotSound 
+                          else 
+                            Mix.pause shotSound) <$>  (bShooting <@ emouse)
         
         (bShots :: Behavior Shots)
             <- accumB [] $ unions
@@ -84,26 +90,35 @@ main = start $ do
         
         (bShooting :: Behavior Bool)
             <- stepper False $ (filterJust $ justPressed <$> emouse)
-              
+        
         (bBackground :: Behavior (Int,Int))
             <- accumB (0,0) $ updateBackground <$ etick
         
-        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bMartin <*> bShots <*> bDrops <*> bBackground <*> bShooting) <@ etick
+        (bScore :: Behavior Int)
+            <- accumB 0 $ unions
+                 [ (+1)       <$ etick
+                 , (\ _ -> 0) <$ onNewGame
+                 ]
+        
+        bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bMartin <*> bShots <*> bDrops <*> bBackground <*> bScore) <@ etick
         
         sink p [on paint :== bpaint]
         reactimate $ repaint p <$ etick
         
-        reactimate $ (set t [enabled :~ not] >>
-                      set t2 [enabled :~ not] >>
-                      set t3 [enabled :~ not])
+        reactimate $ (set t  [enabled := False] >>
+                      set t2 [enabled := False] >>
+                      set t3 [enabled := False] >>
+                      Mix.pause shotSound >> 
+                      Mix.pause bgMusic )
                    <$ whenE (intersectsMartin <$> bDrops <*> bMartin) etick
         
-        reactimate $ (set t [enabled :~ not] >>
-                      set t2 [enabled :~ not] >>
-                      set t3 [enabled :~ not])
+        reactimate $ (set t  [enabled := True] >>
+                      set t2 [enabled := True] >>
+                      set t3 [enabled := True] >> 
+                      resume bgMusic)
                    <$ onNewGame
 
-        reactimate $  (Mix.playChannel (-1) pew 0 >> return ()) <$ whenE bShooting etick2
+        reactimate $ (Mix.playChannel (-1) explosion 0 >> return ()) <$ whenE (intersectionShotDrop <$> bShots <*> bDrops) etick
         
         return ()
   
