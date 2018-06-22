@@ -138,7 +138,6 @@ render martin shots drops bgPos score dc viewArea = do
   resetScaleDC dc
   mapM ((renderShot dc)) shots 
   mapM ((renderDrop dc)) drops
-  --drawText :: DC a -> String -> Point -> [Prop (DC a)] -> IO ()
   set dc [textColor := white]
   drawText dc (show score) (Point 650 50) []
   return ()

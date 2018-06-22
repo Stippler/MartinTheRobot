@@ -14,11 +14,11 @@ module Object
 , addShot
 , render
 , updateBackground
-, playMusic
 , addDrop
 , collisionOccured
 , intersectsMartin
 , updateShots
+, intersectionShotDrop
 ) where
 
 import Geometry
@@ -129,14 +129,16 @@ bgImage = bitmap $ "background3.png"
 -- | renders image, where
 -- |                martin, shots and drops ... TODO fixme
 -- |                bgPos ... TODO fixme
-render :: Martin -> Shots -> Drops -> (Int,Int) -> Bool -> DC a -> Rect -> IO ()
-render martin shots drops bgPos shooting dc viewArea = do
+render :: Martin -> Shots -> Drops -> (Int,Int) -> Int ->  DC a -> Rect -> IO ()
+render martin shots drops bgPos score dc viewArea = do
   renderBackground dc bgPos
   scaleDC dc martin
   renderMartin dc martin
   resetScaleDC dc
   mapM ((renderShot dc)) shots 
   mapM ((renderDrop dc)) drops
+  set dc [textColor := white]
+  drawText dc (show score) (Point 650 50) []
   return ()
 
 -- | ???
@@ -187,14 +189,6 @@ toPoint c = Point (round $ (c^.x- (c^.r)) / (c^.r*2/64)) (round $ (c^.y - (c^.r)
 -- sound --
 -----------
 
-music :: Sound ()
-music = sound "music2.wav"
-shotSound = sound "pew.wav"
-
-playShot :: IO ()
-playShot = play music
-
-
-playMusic :: IO ()
-playMusic = play music
+intersectionShotDrop :: Shots -> Drops -> Bool
+intersectionShotDrop shots drops = any (\ shot -> any (\ drop -> intersects (drop ^. Geometry.circle) (shot ^. Geometry.circle)) drops) shots
 

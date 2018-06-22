@@ -36,7 +36,7 @@ main = start $ do
   music <- Mix.loadWAV "spielsong2.wav"
   pew <- Mix.loadWAV "pew2.wav"
   explosion <- Mix.loadWAV "shot2.wav"
-  bgMusic <- Mix.playChannel (-1) music 0
+  bgMusic <- Mix.playChannel (-1) music (-1)
   shotSound <- Mix.playChannel (-1) pew (-1)
   Mix.pause shotSound
   
