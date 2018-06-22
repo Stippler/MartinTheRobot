@@ -16,7 +16,7 @@ height = 600
 
 main :: IO ()
 main = start $ do 
-  --playMusic
+  playMusic
   f <- frame [text:="Martin der Roboter"] 
   p <- panel f [ ]
   set f [ layout := minsize (sz width height) $ widget p ]
