@@ -36,8 +36,8 @@ main = start $ do
   SDL.init [SDL.InitAudio]
   result <- openAudio 22050 Mix.AudioS16LSB 2 4096
   music <- Mix.loadWAV "spielsong2.wav"
-  pew <- Mix.loadWAV "shot.wav"
-  --ch1 <- Mix.playChannel (-1) music 0
+  pew <- Mix.loadWAV "pew.wav"
+  Mix.playChannel (-1) music 0
   
   let networkDescription :: MomentIO ()
       networkDescription = mdo

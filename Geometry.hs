@@ -82,15 +82,17 @@ normalVec v = Vec ((-1)*v^.vy) (v^.vx)
 -- circle operations --
 -----------------------
 
--- distance between two circles pow 2
+-- | distance between two circles squared
 distance² :: Circle -> Circle -> Float
 distance² c1 c2 = dx*dx + dy * dy 
        where dx = c1^.x - c2^.x
              dy = c1^.y - c2^.y
 
+-- | takes a list of circles and a circle c1 and returns True, if c1 intersects any of the circles from the list
 intersectsList :: [CircleVec] -> Circle -> Bool
 intersectsList circles c1 = any ((intersects (c1)) . _circle) circles
 
+-- | returns the vector from the center of the 2nd circle to the center of the 1st one
 distVec :: Circle -> Circle -> Vec
 distVec c1 c2 = Vec (c1^.x - c2^.x) (c1^.y - c2^.y)  
 
@@ -98,8 +100,7 @@ distVec c1 c2 = Vec (c1^.x - c2^.x) (c1^.y - c2^.y)
 -- movement --
 --------------
 
--- moves a CircleVec by adding vx and vy of vec to x and y of the circles; window is almost a torus
--- TODO: if more than 1 drops, change signature to also take some number from a list of 'offset-numbers' like 373 below
+-- moves a CircleVec (c, v) by adding vector v to the center of the circle c
 move :: CircleVec -> CircleVec
 move cv =  if yy > Geometry.height 
                then cv & circle.x .~ (mod' (vv^.vx + xx + 373) width) & circle.y .~ (-1)*cv^.circle^.r & vec .~ (Vec 0 0)
