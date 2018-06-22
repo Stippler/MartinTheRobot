@@ -15,9 +15,14 @@ import Sound
 import Control.Parallel
 import Control.Concurrent
 
+import Control.Monad
+import Control.Monad.Fix
+import Graphics.UI.SDL as SDL hiding (Event, KeyUp, KeyDown, MouseMotion)
+import Graphics.UI.SDL.Mixer as Mix
+import Foreign.ForeignPtr
+
 main :: IO ()
 main = start $ do
-  forkIO (Sound.play "spielsong2.wav")
   f <- frame [text:="Martin der Roboter"] 
   p <- panel f [ ]
   set f [ layout := minsize (sz (round Geometry.width) (round Geometry.height)) $ widget p ]
@@ -26,6 +31,13 @@ main = start $ do
   t <- timer f [ interval := 10 ]      -- update
   t2 <- timer f [ interval := 300 ]   -- shooting
   t3 <- timer f [ interval := 5000 ]    -- raindrops
+  
+  
+  SDL.init [SDL.InitAudio]
+  result <- openAudio 22050 Mix.AudioS16LSB 2 4096
+  music <- Mix.loadWAV "spielsong2.wav"
+  pew <- Mix.loadWAV "shot.wav"
+  --ch1 <- Mix.playChannel (-1) music 0
   
   let networkDescription :: MomentIO ()
       networkDescription = mdo
@@ -37,7 +49,9 @@ main = start $ do
         etick <- event0 t command   -- timer for updates
         etick2 <- event0 t2 command -- timer for shooting
         etick3 <- event0 t3 command -- timer for creating new raindrops
-
+        
+        reactimate $ (touchForeignPtr music >> touchForeignPtr pew) <$ etick2
+        
         ekey <- event1 p keyboard   -- keyboard events
         emouse <- event1 p mouse    -- mouse events
 
@@ -89,12 +103,13 @@ main = start $ do
                       set t3 [enabled :~ not])
                    <$ onNewGame
 
-        reactimate $  (Sound.play "pew.wav") <$ whenE bShooting etick2
+        reactimate $  (Mix.playChannel (-1) pew 0 >> return ()) <$ whenE bShooting etick2
         
         return ()
   
-  network <- compile networkDescription
-  actuate network
+  forkIO $ do 
+      network <- compile networkDescription
+      actuate network
 
   return ()
 
