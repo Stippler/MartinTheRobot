@@ -92,8 +92,7 @@ changeDir (Vec x y) alpha = Vec u v
 intersects :: Circle -> Circle -> Bool
 intersects c1 c2 = (distance² c1 c2 <= (c1^.r + c2^.r)^2)
 
--- | iterates over the 2nd list of CircleVecs checks collisions with the first list
--- TODO name of parameters?
+-- | iterates over the 2nd list of CircleVecs checks collisions with the first list 
 iterates :: [CircleVec] -> [CircleVec] -> (CircleVec -> Circle -> CircleVec)-> [CircleVec]
 iterates drops [] _ = drops
 iterates drops (x:xs) func = iterates (checkCollision drops (x^.circle) func) xs func

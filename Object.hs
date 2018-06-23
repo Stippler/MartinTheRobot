@@ -13,11 +13,8 @@ module Object
 , updateMartin
 , addShot
 , render
-, updateBackground
-<<<<<<< HEAD
---, playMusic
-=======
->>>>>>> 1305c6c205d739fa75b305fe3ff3a522aab71ccf
+, updateBackground 
+--, playMusic 
 , addDrop
 --, collisionOccured
 , intersectsMartin
@@ -40,13 +37,18 @@ shotRadius = 25
 shotSpeed = Vec 0 (-5) 
 martinRadius = 15 
 dropAcc=0.1
-bgSpeed=5
-<<<<<<< HEAD
-dropRadius=50 
-=======
-dropRadius=100
-minSizeDrop=10
->>>>>>> 1305c6c205d739fa75b305fe3ff3a522aab71ccf
+bgSpeed=5 
+dropRadius=50  
+minSizeDrop=10 
+
+------------
+-- Images --
+------------
+dropImage, shotImage, martinImage, bgImage :: Bitmap ()
+dropImage = bitmap $ "drop.png"
+shotImage = bitmap $ "shotSquare.png"
+martinImage = bitmap $ "m2r21.png"
+bgImage = bitmap $ "background3.png"
 
 ------------
 -- Martin --
@@ -78,7 +80,7 @@ addShot c s = (generateShot (c^.x) (c^.y)):s
 generateShot :: Float -> Float -> Shot
 generateShot x y = CircleVec (Circle x y shotRadius) shotSpeed
 
--- | moves shots according to their motion vectors and 
+-- | moves shots according to their motion vectors and filters them
 updateShots ::  Drops -> Shots -> Shots
 updateShots drops shots =  filterShots (map move shots) $ drops
 
@@ -98,13 +100,12 @@ initialDrops :: Drops
 initialDrops = [CircleVec (Circle 160 (40) 64) (Vec 0 0)]
 
 -- | appends a new drop at (x = random) just above the frame
-addDrop :: Float -> Drops -> Drops 
-addDrop random drops = generateDrop random : drops
+addDrop :: Float -> Float -> Drops -> Drops 
+addDrop randomP randomS drops = generateDrop randomP randomS  : drops
 
--- | generates a new drop at a (x = random*width) just above the frame
--- TODO maybe 2 randoms
-generateDrop :: Float -> CircleVec
-generateDrop random = CircleVec (Circle (random*Geometry.width) (-dropRadius) $ dropRadius*random+minSizeDrop) (Vec 0 0) 
+-- | generates a new drop at a (x = random*width) just above the frame 
+generateDrop :: Float -> Float -> CircleVec
+generateDrop randomPos randomSize = CircleVec (Circle (randomPos*Geometry.width) (-dropRadius) $ dropRadius*randomSize+minSizeDrop) (Vec 0 0) 
 
 -- | moves all drops and changes their direction, if they intersect with any shot in shots
 updateDrops :: Shots -> Drops -> Drops
@@ -128,16 +129,7 @@ updateBackground (pos, bgCount) = if pos<round (Geometry.height*2) then (pos+bgS
 ------------
 
 -- TODO scaling of the image: https://stackoverflow.com/questions/7270956/draw-a-scaled-bitmap-using-wxhaskell
- 
-dropImage, shotImage, martinImage, bgImage :: Bitmap ()
-dropImage = bitmap $ "drop.png"
-shotImage = bitmap $ "shotSquare.png"
-martinImage = bitmap $ "m2r21.png"
-bgImage = bitmap $ "background3.png"
-
--- | renders image, where
--- |                martin, shots and drops ... TODO fixme
--- |                bgPos ... TODO fixme
+-- | renders complete image 
 render :: Martin -> Shots -> Drops -> (Int,Int) -> Int ->  DC a -> Rect -> IO ()
 render martin shots drops bgPos score dc viewArea = do 
   renderBackground dc bgPos 
@@ -203,7 +195,7 @@ toPoint c = Point (round $ (c^.x- (c^.r)) / (c^.r*2/64)) (round $ (c^.y - (c^.r)
 -- sound --
 -----------
  
--- | given a list shots = [Shot] and a list drops = [Drops], True if any two elements intersect
+-- | given a list shots = [Shot] and a list drops = [Drops]: True, if any two elements intersect
 intersectionShotDrop :: Shots -> Drops -> Bool
 intersectionShotDrop shots drops = any (\ shot -> any (\ drop -> intersects (drop ^. Geometry.circle) (shot ^. Geometry.circle)) drops) shots
  
