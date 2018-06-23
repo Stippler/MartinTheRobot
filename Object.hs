@@ -197,5 +197,8 @@ toPoint c = Point (round $ (c^.x- (c^.r)) / (c^.r*2/64)) (round $ (c^.y - (c^.r)
  
 -- | given a list shots = [Shot] and a list drops = [Drops]: True, if any two elements intersect
 intersectionShotDrop :: Shots -> Drops -> Bool
-intersectionShotDrop shots drops = any (\ shot -> any (\ drop -> intersects (drop ^. Geometry.circle) (shot ^. Geometry.circle)) drops) shots
+intersectionShotDrop [] _ = False
+intersectionShotDrop _ [] = False
+intersectionShotDrop shots@(s:hot) drops = or (map (intersects $ s^. Geometry.circle) (map Geometry._circle drops)) || (intersectionShotDrop hot drops)
+--any (\ shot -> any (\ drop -> intersects (drop ^. Geometry.circle) (shot ^. Geometry.circle)) drops) shots
  

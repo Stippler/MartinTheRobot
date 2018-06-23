@@ -27,7 +27,7 @@ main = start $ do
   f <- frame [text:="Martin der Roboter"] 
   p <- panel f [ ]
   set f [ layout := minsize (sz (round Geometry.width) (round Geometry.height)) $ widget p ]
-  frameCenter f
+  frameCenter f 
 
   -- timers --
   t  <- timer f [ interval := 10 ]      -- update, rendering
@@ -59,22 +59,18 @@ main = start $ do
 
         let qTyped    = filterE ((== KeyChar 'q') . keyKey) ekey
             onNewGame = filterE ((== KeySpace) . keyKey) ekey
-            eup       = filterE ((== KeyUp   ) . keyKey) ekey
+            pause     = filterE ((== KeyChar 'p') . keyKey) ekey
             edown     = filterE ((== KeyDown ) . keyKey) ekey
 
 
         brandomPos  <- fromPoll (randomRIO (0,1) :: IO Float)
         brandomSize <- fromPoll (randomRIO (0,1) :: IO Float)
               
-        -- protects sounds from grabage collector
+        -- protects sounds from garbage collector
         reactimate $ (touchForeignPtr music >> touchForeignPtr pew >> touchForeignPtr explosion) <$ etick2
         
         ----- BEHAVIORS -----
         -- player
-        (bGameRunning :: Behavior (Martin))
-            <- stepper (initialMartin) $
-                 updateMartin <$> (filterJust $ justMove <$> emouse)
-        
         (bMartin :: Behavior (Martin))
             <- stepper (initialMartin) $
                  updateMartin <$> (filterJust $ justMove <$> emouse)
@@ -132,6 +128,13 @@ main = start $ do
                       Mix.pause shotSound >> 
                       Mix.pause bgMusic )
                    <$ whenE (intersectsMartin <$> bDrops <*> bMartin) etick
+                   
+        reactimate $ (set t  [enabled := False] >>
+                      set t2 [enabled := False] >>
+                      set t3 [enabled := False] >>
+                      Mix.pause shotSound >> 
+                      Mix.pause bgMusic )
+                   <$ pause           
         
         -- enable timer and background music on onNewGame
         reactimate $ (set t  [enabled := True] >>
