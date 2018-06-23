@@ -21,22 +21,32 @@ import Foreign.ForeignPtr
 
 main :: IO () 
 main = start $ do
+  -- setup --
   f <- frame [text:="Martin der Roboter"] 
   p <- panel f [ ]
   set f [ layout := minsize (sz (round Geometry.width) (round Geometry.height)) $ widget p ]
   frameCenter f
 
-  t <- timer f [ interval := 10 ]      -- update
-  t2 <- timer f [ interval := 300 ]   -- shooting
-  t3 <- timer f [ interval := 5000 ]    -- raindrops
+  -- timers --
+  t <- timer f [ interval := 10 ]       -- update, rendering
+  t2 <- timer f [ interval := 300 ]     -- shooting, creation of new shots
+  t3 <- timer f [ interval := 5000 ]    -- creation of new raindrops
   
-  
+  -- audio --   https://wiki.libsdl.org/SDL_OpenAudio
   SDL.init [SDL.InitAudio]
-  result <- openAudio 22050 Mix.AudioS16LSB 2 4096
+      -- [InitFlag] -> IO ()
+  result <- openAudio 22050 Mix.AudioS16LSB 2 4096 
+      -- frequency: 22050     - also common:  11025, 44100 and 48000
+      -- format: AUDIO_U16LSB - unsigned 16-bit samples in little-endian byte order 
+      -- channels: 2          - number of output channels; supported: 1, 2, 4, 6 (dep. on version)
+      -- samples: 4096        - specifies unit of audio data. better not changed, bc loadWav 
   music <- Mix.loadWAV "spielsong2.wav"
   pew <- Mix.loadWAV "pew2.wav"
   explosion <- Mix.loadWAV "shot2.wav"
   bgMusic <- Mix.playChannel (-1) music 0
+      -- channel: -1         - chooses first channel availabe
+      -- chunk: music        - sample to play
+      -- loop: if (-1) infinite
   shotSound <- Mix.playChannel (-1) pew (-1)
   Mix.pause shotSound
   
@@ -47,15 +57,18 @@ main = start $ do
             <- stepper (initialMartin) $
                  updateMartin <$> (filterJust $ justMove <$> emouse)
       
+      -- Events from timers --
         etick <- event0 t command   -- timer for updates
         etick2 <- event0 t2 command -- timer for shooting
         etick3 <- event0 t3 command -- timer for creating new raindrops
         
         reactimate $ (touchForeignPtr music >> touchForeignPtr pew >> touchForeignPtr explosion) <$ etick2
         
-        ekey <- event1 p keyboard   -- keyboard events
+        -- Events from mouse or keyyboard -- 
+        ekey <- event1 p keyboard   -- keyboard events; keyboard :: Event w (EventKey -> IO ()) 
         emouse <- event1 p mouse    -- mouse events
 
+-- Key KeySpace
         let nTyped  = filterE ((== KeyChar 'N') . keyKey) ekey
             onNewGame = filterE ((== KeyRight) . keyKey) ekey
             eup    = filterE ((== KeyUp   ) . keyKey) ekey
@@ -78,7 +91,7 @@ main = start $ do
             <- accumB [] $ unions
                  [ addShot <$> (bMartin) <@ whenE bShooting etick2
                  , (updateShots <$> bDrops) <@ etick
-                 , (\ _ -> [] ) <$ onNewGame
+                 , (\ _ -> [] ) <$ onNewGame 
                  ]
         
         (bDrops :: Behavior Drops)
@@ -97,9 +110,11 @@ main = start $ do
         (bScore :: Behavior Int)
             <- accumB 0 $ unions
                  [ (+1)       <$ etick
-                 , (\ _ -> 0) <$ onNewGame
+                 , (const 0) <$ onNewGame
+                 --, (\ _ -> 0) <$ onNewGame
                  ]
-        
+                 
+        -- maybe use void :: Functor f => f a -> f () instead of lambda?
         bpaint <- stepper (\_dc _ -> return ()) $ (render <$> bMartin <*> bShots <*> bDrops <*> bBackground <*> bScore) <@ etick
         
         sink p [on paint :== bpaint]

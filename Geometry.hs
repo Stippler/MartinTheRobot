@@ -16,25 +16,25 @@ module Geometry
  , moveAcc -- for Object.updateDrops 
  , intersectsList -- needed in Object, i. e. filterShots
  , iterates -- Object.collisionoccured
+ , intersects -- for intersectShotsDrops
  , width
  , height
  , normed 
  , addV
  , scalV
  , distVec
- , intersects
 ) where
 
 import Control.Lens
 import Data.Function
 import Data.Fixed (mod')
 
+-- | circle for position and size
+-- | vec for direction of movement 
 data CircleVec = CircleVec {
       _circle :: Circle
     , _vec :: Vec
 } deriving (Show)
-
-
 
 data Circle = Circle {
       _x :: Float
@@ -55,47 +55,6 @@ tslf = 10 -- time since last frame
 -- size of window
 width = 800
 height = 600
-
------------------------
--- vector operations --
------------------------
-addV :: Vec -> Vec -> Vec
-addV v1 v2 = Vec (v1^.vx+v2^.vx) (v1^.vy+v2^.vy)
-
-scalV :: Vec -> Float -> Vec
-scalV v scalar = Vec (v^.vx*scalar) (v^.vy*scalar)
-
-dot :: Vec -> Vec -> Float
-dot v1 v2 = (v1^.vx*v2^.vx) + (v1^.vy*v2^.vy)
-
-norm :: Vec -> Float
-norm v = sqrt $ dot v v
-
-normed :: Vec -> Vec
-normed v = scalV v (1/length)
-    where length = norm v
-
--- | returns normal vector of v
-normalVec :: Vec -> Vec
-normalVec v = Vec ((-1)*v^.vy) (v^.vx)
-
------------------------
--- circle operations --
------------------------
-
--- | distance between two circles squared
-distance² :: Circle -> Circle -> Float
-distance² c1 c2 = dx*dx + dy * dy 
-       where dx = c1^.x - c2^.x
-             dy = c1^.y - c2^.y
-
--- | takes a list of circles and a circle c1 and returns True, if c1 intersects any of the circles from the list
-intersectsList :: [CircleVec] -> Circle -> Bool
-intersectsList circles c1 = any ((intersects (c1)) . _circle) circles
-
--- | returns the vector from the center of the 2nd circle to the center of the 1st one
-distVec :: Circle -> Circle -> Vec
-distVec c1 c2 = Vec (c1^.x - c2^.x) (c1^.y - c2^.y)  
 
 --------------
 -- movement --
@@ -148,4 +107,45 @@ checkCollision circlevecs c func = map (\ circlevec -> if intersects c $ circlev
 --collisionOccured :: CircleVec -> Circle -> CircleVec
 --collisionOccured cv c = cv & vec %~ (addV $ (normed v) `scalV` 3)
 --           where v = distVec (cv^.circle) c
- 
+
+-----------------------
+-- circle operations --
+-----------------------
+
+-- | distance between two circles, squared
+distance² :: Circle -> Circle -> Float
+distance² c1 c2 = dx*dx + dy * dy 
+       where dx = c1^.x - c2^.x
+             dy = c1^.y - c2^.y
+
+-- | takes a list of circles and a circle c1 and returns True, if c1 intersects any of the circles from the list
+intersectsList :: [CircleVec] -> Circle -> Bool
+intersectsList circles c1 = any ((intersects (c1)) . _circle) circles
+
+-- | returns the vector from the center of the 2nd circle to the center of the 1st one
+distVec :: Circle -> Circle -> Vec
+distVec c1 c2 = Vec (c1^.x - c2^.x) (c1^.y - c2^.y)  
+
+-----------------------
+-- vector operations --
+-----------------------
+addV :: Vec -> Vec -> Vec
+addV v1 v2 = Vec (v1^.vx+v2^.vx) (v1^.vy+v2^.vy)
+
+scalV :: Vec -> Float -> Vec
+scalV v scalar = Vec (v^.vx*scalar) (v^.vy*scalar)
+
+dot :: Vec -> Vec -> Float
+dot v1 v2 = (v1^.vx*v2^.vx) + (v1^.vy*v2^.vy)
+
+norm :: Vec -> Float
+norm v = sqrt $ dot v v
+
+normed :: Vec -> Vec
+normed v = scalV v (1/length)
+    where length = norm v
+
+-- | returns normal vector of v
+normalVec :: Vec -> Vec
+normalVec v = Vec ((-1)*v^.vy) (v^.vx)
+

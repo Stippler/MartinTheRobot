@@ -14,11 +14,12 @@ module Object
 , addShot
 , render
 , updateBackground
-, playMusic
+--, playMusic
 , addDrop
-, collisionOccured
+--, collisionOccured
 , intersectsMartin
 , updateShots
+, intersectionShotDrop
 ) where
 
 import Geometry
@@ -37,7 +38,7 @@ shotSpeed = Vec 0 (-5)
 martinRadius = 15 
 dropAcc=0.1
 bgSpeed=5
-dropRadius=50
+dropRadius=50 
 
 ------------
 -- Martin --
@@ -129,38 +130,41 @@ bgImage = bitmap $ "background3.png"
 -- | renders image, where
 -- |                martin, shots and drops ... TODO fixme
 -- |                bgPos ... TODO fixme
-render :: Martin -> Shots -> Drops -> (Int,Int) -> Bool -> DC a -> Rect -> IO ()
-render martin shots drops bgPos shooting dc viewArea = do
-  renderBackground dc bgPos
+render :: Martin -> Shots -> Drops -> (Int,Int) -> Int ->  DC a -> Rect -> IO ()
+render martin shots drops bgPos score dc viewArea = do
+  rengit derBackground dc bgPos
   scaleDC dc martin
   renderMartin dc martin
   resetScaleDC dc
   mapM ((renderShot dc)) shots 
   mapM ((renderDrop dc)) drops
+  set dc [textColor := white]
+  drawText dc (show score) (Point 650 50) []
   return ()
 
--- | ???
-renderCircle :: DC a -> Geometry.Circle -> IO ()
-renderCircle dc c = do
-  Graphics.UI.WX.circle dc (point (round $ c^.x) (round $ c^.y)) (round $ c^.r) []
+-- | ??? Delete me
+--renderCircle :: DC a -> Geometry.Circle -> IO ()
+--renderCircle dc c = do
+--  Graphics.UI.WX.circle dc (point (round $ c^.x) (round $ c^.y)) (round $ c^.r) []
 
--- | draw background image
+-- | draw background image, where (fst pos) specifies y-offset
 renderBackground :: DC a -> (Int,Int) -> IO ()
 renderBackground dc pos = do 
   drawBitmap dc bgImage (Point 0 $ fst pos) True []
   drawBitmap dc bgImage (Point 0 $ fst pos - round Geometry.height*2) True []
   return ()
 
--- | 
+-- | draw a player at the center of shot's circle
+renderMartin :: DC a -> Martin -> IO ()
+renderMartin dc martin = drawBitmap dc martinImage (toPoint martin) True []
+
+-- | draw a shot, shotImage, at the center of shot's circle
 renderShot :: DC a -> Shot -> IO ()
 renderShot dc shot = do
   scaleDC dc (shot^.Geometry.circle)
   drawBitmap dc shotImage (toPoint $ shot^.Geometry.circle) True []
   resetScaleDC dc
   return ()
-
-renderMartin :: DC a -> Martin -> IO ()
-renderMartin dc martin = drawBitmap dc martinImage (toPoint martin) True []
 
 renderDrop :: DC a -> Drop -> IO ()
 renderDrop dc drop = do 
@@ -169,17 +173,21 @@ renderDrop dc drop = do
   resetScaleDC dc
   return ()
 
+-- | scales 'image' of size 64x64 to size (2*r)x(2*r), where r is the radius of circle
+-- | actually, reduce scale at which anything gets drawn
 scaleDC :: DC a -> Circle -> IO ()
 scaleDC dc circle = do
   let scale=((realToFrac $ circle^.r*2)/64)
   dcSetUserScale dc scale scale
   return ()
 
+-- | set scaling factor back to 1 in each direction
 resetScaleDC :: DC a -> IO ()
 resetScaleDC dc = do
   dcSetUserScale dc 1 1
   return ()
 
+-- | given a circle c, return the point at its upper left bounding box, scaled 
 toPoint :: Circle -> Point
 toPoint c = Point (round $ (c^.x- (c^.r)) / (c^.r*2/64)) (round $ (c^.y - (c^.r)) / (c^.r*2/64))
 
@@ -187,6 +195,11 @@ toPoint c = Point (round $ (c^.x- (c^.r)) / (c^.r*2/64)) (round $ (c^.y - (c^.r)
 -- sound --
 -----------
 
+-- | given a list shots = [Shot] and a list drops = [Drops], True if any two elements intersect
+intersectionShotDrop :: Shots -> Drops -> Bool
+intersectionShotDrop shots drops = any (\ shot -> any (\ drop -> intersects (drop ^. Geometry.circle) (shot ^. Geometry.circle)) drops) shots
+
+{--
 music :: Sound ()
 music = sound "music2.wav"
 shotSound = sound "pew.wav"
@@ -197,4 +210,4 @@ playShot = play music
 
 playMusic :: IO ()
 playMusic = play music
-
+--}
