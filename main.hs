@@ -42,11 +42,11 @@ main = start $ do
       -- samples: 4096        - specifies unit of audio data. better not changed, bc loadWav 
   music <- Mix.loadWAV "spielsong2.wav"
   pew <- Mix.loadWAV "pew2.wav"
-  explosion <- Mix.loadWAV "shot2.wav"
-  bgMusic <- Mix.playChannel (-1) music 0
-      -- channel: -1         - chooses first channel availabe
+  explosion <- Mix.loadWAV "shot2.wav" 
+  bgMusic <- Mix.playChannel (-1) music (-1) 
+      -- channel: -1         - chooses first free channel 
       -- chunk: music        - sample to play
-      -- loop: if (-1) infinite
+      -- loop: if (-1) infinite 
   shotSound <- Mix.playChannel (-1) pew (-1)
   Mix.pause shotSound
   
@@ -96,7 +96,7 @@ main = start $ do
         
         (bDrops :: Behavior Drops)
             <- accumB initialDrops $ unions
-                 [ addDrop <$> brandom <@ etick3
+                 [ addDrop <$> brandom <@ whenE (fmap (<16) $ length <$> bDrops)  etick3
                  , (updateDrops <$> bShots) <@ etick
                  , (\ _ -> []) <$ onNewGame
                  ]
